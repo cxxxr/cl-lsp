@@ -142,13 +142,13 @@
 
 (define-interface |TextDocumentSyncOptions| ()
   (|openClose| :optional t :type boolean)
-  (|change| :optional t :type integer)
+  (|change| :optional t :type number)
   (|willSave| :optional t :type boolean)
   (|willSaveWaitUntil| :optional t :type boolean)
   (|save| :optional t :type |SaveOptions|))
 
 (define-interface |ServerCapabilities| ()
-  (|textDocumentSync| :optional t :type (or |TextDocumentSyncOptions| integer))
+  (|textDocumentSync| :optional t :type (or |TextDocumentSyncOptions| number))
   (|hoverProvider| :optional t :type boolean)
   (|completionProvider| :optional t :type |CompletionOptions|)
   (|signatureHelpProvider| :optional t :type |SignatureHelpOptions|)
@@ -166,6 +166,40 @@
   (|documentLinkProvider| :optional t :type |DocumentLinkOptions|)
   (|executeCommandProvider| :optional t :type |ExecuteCommandOptions|)
   (|experimental| :optional t :type t))
+
+(define-interface |ShowMessageParams| ()
+  (|type| :type number)
+  (|message| :type string))
+
+(define-interface |ShowMessageRequestParams| ()
+  (|type| :type number)
+  (|message| :type string)
+  (|actions| :optional t :type (trivial-types:proper-list |MessageActionItem|)))
+
+(define-interface |MessageActionItem| ()
+  (|title| :type string))
+
+(define-interface |LogMessageParams| ()
+  (|type| :type number)
+  (|message| :type string))
+
+(define-interface |Registration| ()
+  (|id| :type string)
+  (|method| :type string)
+  (|registerOptions| :optional t))
+
+(define-interface |RegistrationParams| ()
+ (|registrations| :type (trivial-types:proper-list |Registration|)))
+
+(define-interface |TextDocumentRegistrationOptions| ()
+  (|documentSelector| :type (or |DocumentSelector| |null|)))
+
+(define-interface |Unregistration| ()
+  (|id| :type string)
+  (|method| :type string))
+
+(define-interface |UnregistrationParams| ()
+  (|unregisterations| :type (trivial-types:proper-list |Unregistration|)))
 
 (define-interface |DidOpenTextDocumentParams| ()
   (|textDocument| :type |TextDocumentItem|))
@@ -185,6 +219,24 @@
 
 (define-interface |DidCloseTextDocumentParams| ()
   (|textDocument| :type |TextDocumentIdentifier|))
+
+(define-interface |CompletionList| ()
+  (|isIncomplete| :type boolean)
+  (|items| :type (trivial-types:proper-list |CompletionItem|)))
+
+(define-interface |CompletionItem| ()
+  (|label| :type string)
+  (|kind| :optional t :type number)
+  (|detail| :optional t :type string)
+  (|documentation| :optional t :type string)
+  (|sortText| :optional t :type string)
+  (|filterText| :optional t :type string)
+  (|insertText| :optional t :type string)
+  (|insertTextFormat| :optional t :type |InsertTextFormat|)
+  (|textEdit| :optional t :type |TextEdit|)
+  (|additionalTextEdits| :optional t :type (trivial-types:proper-list |TextEdit|))
+  (|command| :optional t :type |Command|)
+  (|data| :optional t :type t))
 
 (defun maybe-protocol-type (type hash-value)
   (cond ((and (symbolp type)
