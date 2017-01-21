@@ -18,13 +18,16 @@
                                         (progn ,@body))))
                             ,return))
 
+(defvar *documents* '())
 (defstruct document
   buffer
   uri
   languageId
   version)
 
-(defvar *documents* '())
+(defun find-document (uri)
+  (find uri *documents* :test #'equal :key #'document-uri))
+
 (defvar *initialized* nil)
 (defvar *shutdown* nil)
 
@@ -72,8 +75,45 @@
          (content-changes
           (slot-value did-change-text-document-params
                       '|contentChanges|)))
-    (declare (ignore text-document content-changes))
-    (values)))
+    (let* ((document (find-document (slot-value text-document '|uri|)))
+           (buffer (document-buffer document))
+           (point (lem-base:buffer-point buffer)))
+      (dolist (content-change content-changes)
+        (with-slots (|range| |rangeLength| |text|)
+            content-change
+          (cond ((or (null |range|) (null |rangeLength|))
+                 (lem-base:erase-buffer buffer)
+                 (lem-base:insert-string point |text|))
+                (t
+                 (with-slots (|start|) |range|
+                   (with-slots (|line| |character|) |start|
+                     (lem-base:line-offset (lem-base:buffer-start point) |line|)
+                     (lem-base:character-offset point |character|))
+                   (lem-base:delete-character point |rangeLength|)
+                   (lem-base:insert-string point |text|)))))))))
+
+(define-method "textDocument/willSave" nil (params)
+  )
+
+(define-method "textDocument/willSaveWaitUntil" t (params)
+  )
+
+(define-method "textDocument/didSave" nil (params)
+  (let* ((did-save-text-document-params
+          (convert-from-hash-table '|DidSaveTextDocumentParams| params))
+         (text
+          (slot-value did-save-text-document-params '|text|))
+         (text-document
+          (slot-value did-save-text-document-params '|textDocument|))
+         (uri
+          (slot-value text-document '|uri|))
+         (document
+          (find-document uri))
+         (buffer
+          (document-buffer document)))
+    (lem-base:erase-buffer buffer)
+    (lem-base:insert-string (buffer-point buffer) text))
+  (values))
 
 (define-method "textDocument/didClose" nil (params)
   (let* ((did-close-text-document-params
@@ -85,7 +125,7 @@
          (uri
           (slot-value text-document '|uri|))
          (document
-          (find uri *documents* :key #'document-uri :test #'equal)))
+          (find-document uri)))
     (lem-base:delete-buffer (document-buffer document))
     (setf *documents* (delete uri *documents* :key #'document-uri :test #'equal)))
   (values))
