@@ -5,4 +5,4 @@
 (in-package #:lsp.util)
 
 (defun phlist (&rest plist)
-  (alexandria:plist-hash-table plist))
+  (alexandria:plist-hash-table plist :test 'equal))
