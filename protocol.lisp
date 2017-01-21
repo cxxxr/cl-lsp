@@ -82,6 +82,91 @@
   (|capabilities| :type |ClientCapabilities|)
   (|trace| :optional t))
 
+(define-interface |WorkspaceClientCapabilites| ()
+  (|applyEdit| :optional t :type boolean)
+  (|didChangeConfiguration| :optional t)
+  (|didChangeWatchedFiles| :optional t)
+  (|symbol| :optional t)
+  (|executeCommand| :optional t))
+
+(define-interface |TextDocumentClientCapabilities| ()
+  (|synchronization| :optional t)
+  (|completion| :optional t)
+  (|hover| :optional t)
+  (|signatureHelp| :optional t)
+  (|references| :optional t)
+  (|documentHighlight| :optional t)
+  (|documentSymbol| :optional t)
+  (|formatting| :optional t)
+  (|rangeFormatting| :optional t)
+  (|onTypeFormatting| :optional t)
+  (|definition| :optional t)
+  (|codeAction| :optional t)
+  (|codeLens| :optional t)
+  (|documentLink| :optional t)
+  (|rename| :optional t))
+
+(define-interface |ClientCapabilities| ()
+  (|workspace| :optional t :type |WorkspaceClientCapabilites|)
+  (|textDocument| :optional t :type |TextDocumentClientCapabilities|)
+  (|experimental| :optional t :type t))
+
+(define-interface |InitializeResult| ()
+  (|capabilities| :type |ServerCapabilities|))
+
+(define-interface |InitializeError| ()
+  (|retry| :type boolean))
+
+(define-interface |CompletionOptions| ()
+  (|resolveProvider| :optional t :type boolean)
+  (|triggerCharacters| :optional t :type (trivial-types:proper-list string)))
+
+(define-interface |SignatureHelpOptions| ()
+  (|triggerCharacters| :optional t :type (trivial-types:proper-list string)))
+
+(define-interface |CodeLensOptions| ()
+  (|resolveProvider| :optional t :type boolean))
+
+(define-interface |DocumentOnTypeFormattingOptions| ()
+  (|firstTriggerCharacter| :type string)
+  (|moreTriggerCharacter| :optional t :type (trivial-types:proper-list string)))
+
+(define-interface |DocumentLinkOptions| ()
+  (|resolveProvider| :optional t :type boolean))
+
+(define-interface |ExecuteCommandOptions| ()
+  (|commands| :type (trivial-types:proper-list string)))
+
+(define-interface |SaveOptions| ()
+  (|includeText| :optional t :type boolean))
+
+(define-interface |TextDocumentSyncOptions| ()
+  (|openClose| :optional t :type boolean)
+  (|change| :optional t :type integer)
+  (|willSave| :optional t :type boolean)
+  (|willSaveWaitUntil| :optional t :type boolean)
+  (|save| :optional t :type |SaveOptions|))
+
+(define-interface |ServerCapabilities| ()
+  (|textDocumentSync| :optional t :type (or |TextDocumentSyncOptions| integer))
+  (|hoverProvider| :optional t :type boolean)
+  (|completionProvider| :optional t :type |CompletionOptions|)
+  (|signatureHelpProvider| :optional t :type |SignatureHelpOptions|)
+  (|definitionProvider| :optional t :type boolean)
+  (|referencesProvider| :optional t :type boolean)
+  (|documentHighlightProvider| :optional t :type boolean)
+  (|documentSymbolProvider| :optional t :type boolean)
+  (|workspaceSymbolProvider| :optional t :type boolean)
+  (|codeActionProvider| :optional t :type boolean)
+  (|codeLensProvider| :optional t :type |CodeLensOptions|)
+  (|documentFormattingProvider| :optional t :type boolean)
+  (|documentRangeFormattingProvider| :optional t :type boolean)
+  (|documentOnTypeFormattingProvider| :optional t :type |DocumentOnTypeFormattingOptions|)
+  (|renameProvider| :optional t :type boolean)
+  (|documentLinkProvider| :optional t :type |DocumentLinkOptions|)
+  (|executeCommandProvider| :optional t :type |ExecuteCommandOptions|)
+  (|experimental| :optional t :type t))
+
 (define-interface |DidOpenTextDocumentParams| ()
   (|textDocument| :type |TextDocumentItem|))
 
@@ -93,6 +178,10 @@
   (|range| :optional t :type |Range|)
   (|rangeLength| :optional t :type number)
   (|text| :type string))
+
+(define-interface |DidSaveTextDocumentParams| ()
+  (|textDocument| :type |TextDocumentIdentifier|)
+  (|text| :optional t :type string))
 
 (define-interface |DidCloseTextDocumentParams| ()
   (|textDocument| :type |TextDocumentIdentifier|))
