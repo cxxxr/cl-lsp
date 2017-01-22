@@ -1,6 +1,7 @@
 (defpackage #:lsp.protocol
   (:use #:cl)
-  (:export #:convert-from-hash-table))
+  (:export #:convert-from-hash-table
+           #:convert-to-hash-table))
 
 (in-package #:lsp.protocol)
 
@@ -242,18 +243,20 @@
   (when (member type *protocol-symbols*)
     type))
 
+(defun protocol-list-p (type)
+  (and (consp type)
+       (eq 'trivial-types:proper-list (car type))
+       (protocol-symbol-p (second type))))
+
 (defun maybe-protocol-type (type hash-value)
   (cond ((and (symbolp type)
               (protocol-symbol-p type)
               (hash-table-p hash-value))
          (convert-from-hash-table type hash-value))
-        ((and (consp type)
-              (eq 'trivial-types:proper-list (first type)))
-         (let ((type (protocol-symbol-p (second type))))
-           (when type
-             (mapcar (lambda (hash-value-1)
-                       (convert-from-hash-table type hash-value-1))
-                     hash-value))))
+        ((protocol-list-p type)
+         (mapcar (lambda (hash-value-1)
+                   (convert-from-hash-table type hash-value-1))
+                 hash-value))
         ((and (consp type)
               (eq 'or (first type)))
          (some (lambda (type-1)
@@ -272,3 +275,22 @@
                       (or (maybe-protocol-type slot-type hash-value)
                           hash-value))))
     object))
+
+(defun convert-to-hash-table (instance)
+  (let ((hash-table (make-hash-table :test 'equal)))
+    (loop :for slot :in (c2mop:class-slots (find-class (type-of instance)))
+          :for name := (c2mop:slot-definition-name slot)
+          :for type := (c2mop:slot-definition-type slot)
+          :for value := (slot-value instance name)
+          :do
+          (setf (gethash (string name) hash-table)
+                (cond
+                  ((protocol-symbol-p type)
+                   (convert-to-hash-table value))
+                  ((protocol-list-p type)
+                   (mapcar #'convert-to-hash-table value))
+                  ((and (consp type) (eq 'or (car type)))
+                   (convert-to-hash-table value))
+                  (t
+                   value))))
+    hash-table))
