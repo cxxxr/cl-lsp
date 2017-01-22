@@ -28,6 +28,15 @@
 (defun find-document (uri)
   (find uri *documents* :test #'equal :key #'document-uri))
 
+(defun move-to-position (point position)
+  (declare (type lem-base:point point)
+           (type |Position| position))
+  (with-slots (|line| |character|) position
+    (lem-base:buffer-start point)
+    (lem-base:line-offset point |line|)
+    (lem-base:character-offset point |character|)
+    point))
+
 (defvar *initialized* nil)
 (defvar *shutdown* nil)
 
@@ -37,8 +46,7 @@
             "message" "did not initialize")))
 
 (define-method "initialize" t (params)
-  (setq *initialized* t)
-  t)
+  (setq *initialized* t))
 
 (define-method "shutdown" t (params)
   (setq *shutdown* t)
@@ -86,9 +94,7 @@
                  (lem-base:insert-string point |text|))
                 (t
                  (with-slots (|start|) |range|
-                   (with-slots (|line| |character|) |start|
-                     (lem-base:line-offset (lem-base:buffer-start point) |line|)
-                     (lem-base:character-offset point |character|))
+                   (move-to-position point |start|)
                    (lem-base:delete-character point |rangeLength|)
                    (lem-base:insert-string point |text|)))))))))
 
@@ -112,7 +118,7 @@
          (buffer
           (document-buffer document)))
     (lem-base:erase-buffer buffer)
-    (lem-base:insert-string (buffer-point buffer) text))
+    (lem-base:insert-string (lem-base:buffer-point buffer) text))
   (values))
 
 (define-method "textDocument/didClose" nil (params)
