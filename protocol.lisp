@@ -238,9 +238,13 @@
   (|command| :optional t :type |Command|)
   (|data| :optional t :type t))
 
+(defun protocol-symbol-p (type)
+  (when (member type *protocol-symbols*)
+    type))
+
 (defun maybe-protocol-type (type hash-value)
   (cond ((and (symbolp type)
-              (member type *protocol-symbols*)
+              (protocol-symbol-p type)
               (hash-table-p hash-value))
          (convert-from-hash-table type hash-value))
         ((and (consp type)
