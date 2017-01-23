@@ -7,7 +7,7 @@
 
 (defvar *mapper* (jsonrpc:make-mapper))
 
-(defmacro define-method (name return (params) &body body)
+(defmacro define-method (name (params) &body body)
   `(jsonrpc:register-method *mapper*
                             ,name
                             (lambda (,params)
@@ -15,8 +15,7 @@
                               ,(if (string= name "initialize")
                                    `(progn ,@body)
                                    `(or (check-initialized)
-                                        (progn ,@body))))
-                            ,return))
+                                        (progn ,@body))))))
 
 (defvar *documents* '())
 (defstruct document
@@ -45,17 +44,17 @@
     (phlist "code" -32002
             "message" "did not initialize")))
 
-(define-method "initialize" t (params)
+(define-method "initialize" (params)
   (setq *initialized* t))
 
-(define-method "shutdown" t (params)
+(define-method "shutdown" (params)
   (setq *shutdown* t)
   t)
 
-(define-method "exit" nil (params)
+(define-method "exit" (params)
   (values))
 
-(define-method "textDocument/didOpen" nil (params)
+(define-method "textDocument/didOpen" (params)
   (let* ((did-open-text-document-params
           (convert-from-hash-table '|DidOpenTextDocumentParams|
                                    params))
@@ -73,7 +72,7 @@
               *documents*))))
   (values))
 
-(define-method "textDocument/didChange" nil (params)
+(define-method "textDocument/didChange" (params)
   (let* ((did-change-text-document-params
           (convert-from-hash-table '|DidChangeTextDocumentParams|
                                    params))
@@ -98,13 +97,13 @@
                    (lem-base:delete-character point |rangeLength|)
                    (lem-base:insert-string point |text|)))))))))
 
-(define-method "textDocument/willSave" nil (params)
+(define-method "textDocument/willSave" (params)
   )
 
-(define-method "textDocument/willSaveWaitUntil" t (params)
+(define-method "textDocument/willSaveWaitUntil" (params)
   )
 
-(define-method "textDocument/didSave" nil (params)
+(define-method "textDocument/didSave" (params)
   (let* ((did-save-text-document-params
           (convert-from-hash-table '|DidSaveTextDocumentParams| params))
          (text
@@ -121,7 +120,7 @@
     (lem-base:insert-string (lem-base:buffer-point buffer) text))
   (values))
 
-(define-method "textDocument/didClose" nil (params)
+(define-method "textDocument/didClose" (params)
   (let* ((did-close-text-document-params
           (convert-from-hash-table '|DidCloseTextDocumentParams|
                                    params))
