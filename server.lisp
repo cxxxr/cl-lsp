@@ -1,7 +1,7 @@
-(defpackage #:lsp.server
-  (:use #:cl
-        #:lsp.protocol
-        #:lsp.util))
+(defpackage :lsp.server
+  (:use :cl
+        :lsp.protocol
+        :lsp.util))
 
 (in-package #:lsp.server)
 
