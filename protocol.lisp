@@ -190,7 +190,7 @@
   (|registerOptions| :optional t))
 
 (define-interface |RegistrationParams| ()
- (|registrations| :type (trivial-types:proper-list |Registration|)))
+  (|registrations| :type (trivial-types:proper-list |Registration|)))
 
 (define-interface |TextDocumentRegistrationOptions| ()
   (|documentSelector| :type (or |DocumentSelector| |null|)))
@@ -238,6 +238,10 @@
   (|additionalTextEdits| :optional t :type (trivial-types:proper-list |TextEdit|))
   (|command| :optional t :type |Command|)
   (|data| :optional t :type t))
+
+(define-interface |Hover| ()
+  (|contents| :type t)
+  (|range| :optional t :type |Range|))
 
 (defun protocol-symbol-p (type)
   (when (member type *protocol-symbols*)
