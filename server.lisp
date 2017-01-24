@@ -36,6 +36,29 @@
     (lem-base:character-offset point |character|)
     point))
 
+(defun buffer-package-name (buffer)
+  (declare (ignore buffer))
+  "CL-USER")
+
+(defun call-with-text-document-position (params function)
+  (let* ((text-document-position-params
+          (convert-from-hash-table '|TextDocumentPositionParams| params))
+         (position
+          (slot-value text-document-position-params '|position|))
+         (uri
+          (slot-value (slot-value text-document-position-params '|textDocument|) '|uri|))
+         (document
+          (find-document uri))
+         (buffer
+          (document-buffer document))
+         (point
+          (lem-base:buffer-point buffer)))
+    (move-to-position point position)
+    (funcall function buffer point)))
+
+(defmacro with-text-document-position ((buffer point) params &body body)
+  `(call-with-text-document-position ,params (lambda (,buffer ,point) ,@body)))
+
 (defvar *initialized* nil)
 (defvar *shutdown* nil)
 
@@ -45,7 +68,30 @@
             "message" "did not initialize")))
 
 (define-method "initialize" (params)
-  (setq *initialized* t))
+  (setq *initialized* t)
+  (let* ((initialize-params (convert-from-hash-table '|InitializeParams| params)))
+    (declare (ignore initialize-params))
+    (convert-to-hash-table
+     (make-instance '|InitializeResult|
+                    :|capabilities| (make-instance '|ServerCapabilities|
+                                                   :|textDocumentSync| nil
+                                                   :|hoverProvider| nil
+                                                   :|completionProvider| nil
+                                                   :|signatureHelpProvider| nil
+                                                   :|definitionProvider| nil
+                                                   :|referencesProvider| nil
+                                                   :|documentHighlightProvider| nil
+                                                   :|documentSymbolProvider| nil
+                                                   :|workspaceSymbolProvider| nil
+                                                   :|codeActionProvider| nil
+                                                   :|codeLensProvider| nil
+                                                   :|documentFormattingProvider| nil
+                                                   :|documentRangeFormattingProvider| nil
+                                                   :|documentOnTypeFormattingProvider| nil
+                                                   :|renameProvider| nil
+                                                   :|documentLinkProvider| nil
+                                                   :|executeCommandProvider| nil
+                                                   :|experimental| nil)))))
 
 (define-method "shutdown" (params)
   (setq *shutdown* t)
@@ -134,3 +180,44 @@
     (lem-base:delete-buffer (document-buffer document))
     (setf *documents* (delete uri *documents* :key #'document-uri :test #'equal)))
   (values))
+
+(define-method "textDocument/completion" (params)
+  (with-text-document-position (buffer point) params
+    (let ((result
+           (swank:fuzzy-completions (lem-base:symbol-string-at-point point)
+                                    (buffer-package-name buffer))))
+      (when result
+        (destructuring-bind (completions timeout) result
+          (declare (ignore timeout))
+          (convert-to-hash-table
+           (make-instance
+            '|CompletionList|
+            :|isIncomplete| nil
+            :|items| (loop :for completion :in completions
+                           :collect (make-instance
+                                     '|CompletionItem|
+                                     :|label| (first completion)
+                                     ;:|kind|
+                                     ;:|detail|
+                                     ;:|documentation|
+                                     ;:|sortText|
+                                     ;:|filterText|
+                                     ;:|insertText|
+                                     ;:|insertTextFormat|
+                                     ;:|textEdit|
+                                     ;:|additionalTextEdits|
+                                     ;:|command|
+                                     ;:|data|
+                                     )))))))))
+
+(define-method "textDocument/hover" (params)
+  (with-text-document-position (buffer point) params
+    (declare (ignore buffer))
+    (let ((describe-string
+           (ignore-errors
+            (swank:describe-symbol
+             (lem-base:symbol-string-at-point point)))))
+      (when describe-string
+        (convert-to-hash-table
+         (make-instance '|Hover|
+                        :contents describe-string))))))
