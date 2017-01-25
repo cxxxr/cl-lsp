@@ -38,7 +38,9 @@
   version)
 
 (defun find-document (uri)
-  (find uri *documents* :test #'equal :key #'document-uri))
+  (dolist (document *documents*)
+    (when (equal uri (document-uri document))
+      (return document))))
 
 (defun buffer-package-name (buffer)
   (declare (ignore buffer))
@@ -52,16 +54,24 @@
          (uri
           (slot-value (slot-value text-document-position-params '|textDocument|) '|uri|))
          (document
-          (find-document uri))
-         (buffer
-          (document-buffer document))
-         (point
-          (lem-base:buffer-point buffer)))
-    (lsp.editor:move-to-lsp-position point position)
-    (funcall function buffer point)))
+          (find-document uri)))
+    (when document
+      (let* ((buffer
+              (document-buffer document))
+             (point
+              (lem-base:buffer-point buffer)))
+        (lsp.editor:move-to-lsp-position point position)
+        (funcall function buffer point)))))
 
 (defmacro with-text-document-position ((buffer point) params &body body)
   `(call-with-text-document-position ,params (lambda (,buffer ,point) ,@body)))
+
+(defmacro with-swank ((&key (package (find-package "CL-USER"))
+                            (readtable '*readtable*))
+                      &body body)
+  `(let ((swank::*buffer-package* ,package)
+         (swank::*buffer-readtable* ,readtable))
+     ,@body))
 
 (defvar *initialized* nil)
 (defvar *shutdown* nil)
@@ -186,6 +196,7 @@
     (setf *documents* (delete uri *documents* :key #'document-uri :test #'equal)))
   (values))
 
+#+(or)
 (define-method "textDocument/completion" (params)
   (with-text-document-position (buffer point) params
     (let ((result
@@ -217,12 +228,22 @@
 
 (define-method "textDocument/hover" (params)
   (with-text-document-position (buffer point) params
-    (declare (ignore buffer))
     (let ((describe-string
            (ignore-errors
-            (swank:describe-symbol
-             (lem-base:symbol-string-at-point point)))))
-      (when describe-string
-        (convert-to-hash-table
-         (make-instance '|Hover|
-                        :contents describe-string))))))
+            (with-swank (:package (find-package (buffer-package-name buffer)))
+              (swank:describe-symbol
+               (lem-base:symbol-string-at-point point))))))
+      (convert-to-hash-table
+       (if describe-string
+           (lem-base:with-point ((start point)
+                                 (end point))
+             (lem-base:skip-chars-backward start #'lem-base:syntax-symbol-char-p)
+             (lem-base:skip-chars-forward end #'lem-base:syntax-symbol-char-p)
+             (make-instance '|Hover|
+                            :|contents| describe-string
+                            :|range| (make-lsp-range start end)))
+           (make-instance '|Hover|
+                          :|contents| ""))))))
+
+(defun main ()
+  (jsonrpc:server-listen *mapper* :port 10003))
