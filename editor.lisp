@@ -1,6 +1,7 @@
 (defpackage :lsp.editor
   (:use :cl :lem-base :lsp.protocol)
   (:export :move-to-lsp-position
+           :make-lsp-position
            :make-lsp-range))
 
 (in-package :lsp.editor)
@@ -9,10 +10,14 @@
   (declare (type point point)
            (type |Position| position))
   (with-slots (|line| |character|) position
-    (buffer-start point)
-    (line-offset point |line|)
+    (move-to-line point (1+ |line|))
     (character-offset point |character|)
     point))
+
+(defun make-lsp-position (point)
+  (make-instance '|Position|
+                 :|line| (line-number-at-point point)
+                 :|character| (point-charpos point)))
 
 (defun make-lsp-range (start end)
   (declare (type point start end))
