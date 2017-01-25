@@ -1,7 +1,7 @@
-(eval-when (:load-toplevel :compile-toplevel :execute)
-  (unless (find-package :lsp.protocol)
-    (make-package :lsp.protocol :use '(:cl))
-    (use-package :cl :lsp.protocol)))
+(defpackage :lsp.protocol
+  (:use :cl)
+  (:export :convert-from-hash-table
+           :convert-to-hash-table))
 
 (in-package :lsp.protocol)
 
