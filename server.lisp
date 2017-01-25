@@ -7,15 +7,27 @@
 
 (defvar *mapper* (jsonrpc:make-mapper))
 
+(defun call-with-error-handle (function)
+  (handler-bind ((error (lambda (c)
+                          (format t "~A~%~%~A~%"
+                                  c
+                                  (with-output-to-string (stream)
+                                    (uiop:print-backtrace :stream stream :condition c))))))
+    (funcall function)))
+
+(defmacro with-error-handle (&body body)
+  `(call-with-error-handle (lambda () ,@body)))
+
 (defmacro define-method (name (params) &body body)
   `(jsonrpc:register-method *mapper*
                             ,name
                             (lambda (,params)
                               (declare (ignorable ,params))
-                              ,(if (string= name "initialize")
-                                   `(progn ,@body)
-                                   `(or (check-initialized)
-                                        (progn ,@body))))))
+                              (with-error-handle
+                                ,(if (string= name "initialize")
+                                     `(progn ,@body)
+                                     `(or (check-initialized)
+                                          (progn ,@body)))))))
 
 (defvar *documents* '())
 (defstruct document
