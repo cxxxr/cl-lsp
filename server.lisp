@@ -27,15 +27,6 @@
 (defun find-document (uri)
   (find uri *documents* :test #'equal :key #'document-uri))
 
-(defun move-to-position (point position)
-  (declare (type lem-base:point point)
-           (type |Position| position))
-  (with-slots (|line| |character|) position
-    (lem-base:buffer-start point)
-    (lem-base:line-offset point |line|)
-    (lem-base:character-offset point |character|)
-    point))
-
 (defun buffer-package-name (buffer)
   (declare (ignore buffer))
   "CL-USER")
@@ -53,7 +44,7 @@
           (document-buffer document))
          (point
           (lem-base:buffer-point buffer)))
-    (move-to-position point position)
+    (lsp.editor:move-to-lsp-position point position)
     (funcall function buffer point)))
 
 (defmacro with-text-document-position ((buffer point) params &body body)
@@ -109,7 +100,7 @@
                       '|textDocument|)))
     (with-slots (|uri| |languageId| |version| |text|)
         text-document
-      (let ((buffer (lem-base:get-buffer-create |uri|)))
+      (let ((buffer (lem-base:make-buffer |uri|)))
         (lem-base:insert-string (lem-base:buffer-point buffer) |text|)
         (push (make-document :buffer buffer
                              :uri |uri|
@@ -139,7 +130,7 @@
                  (lem-base:insert-string point |text|))
                 (t
                  (with-slots (|start|) |range|
-                   (move-to-position point |start|)
+                   (lsp.editor:move-to-lsp-position point |start|)
                    (lem-base:delete-character point |rangeLength|)
                    (lem-base:insert-string point |text|)))))))))
 

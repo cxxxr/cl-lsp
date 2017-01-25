@@ -3,4 +3,5 @@
   :serial t
   :components ((:file "util")
                (:file "protocol")
+               (:file "editor")
                (:file "server")))
