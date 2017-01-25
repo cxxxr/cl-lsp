@@ -8,6 +8,12 @@
 
 (defvar *mapper* (jsonrpc:make-mapper))
 
+(defun method-log (name params)
+  (format t "name: ~A~%" name)
+  (format t "params: ~A~%"
+          (with-output-to-string (stream)
+            (yason:encode params stream))))
+
 (defun call-with-error-handle (function)
   (handler-bind ((error (lambda (c)
                           (format t "~A~%~%~A~%"
@@ -25,6 +31,7 @@
                             (lambda (,params)
                               (declare (ignorable ,params))
                               (with-error-handle
+                                (method-log ',name ,params)
                                 ,(if (string= name "initialize")
                                      `(progn ,@body)
                                      `(or (check-initialized)
