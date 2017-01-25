@@ -16,12 +16,12 @@
 
 (defun make-lsp-position (point)
   (make-instance '|Position|
-                 :|line| (line-number-at-point point)
+                 :|line| (1- (line-number-at-point point))
                  :|character| (point-charpos point)))
 
 (defun make-lsp-range (start end)
   (declare (type point start end))
-  (let* ((start-line (line-number-at-point start))
+  (let* ((start-line (1- (line-number-at-point start)))
          (start-character (point-charpos start))
          (end-line (+ start-line (count-lines start end)))
          (end-character (point-charpos end)))
