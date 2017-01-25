@@ -1,7 +1,8 @@
 (defpackage :lsp.server
   (:use :cl
         :lsp.protocol
-        :lsp.util))
+        :lsp.util
+        :lsp.editor))
 
 (in-package #:lsp.server)
 
@@ -113,6 +114,7 @@
     (with-slots (|uri| |languageId| |version| |text|)
         text-document
       (let ((buffer (lem-base:make-buffer |uri|)))
+        (setf (lem-base:buffer-syntax-table buffer) lsp.lisp-syntax:*syntax-table*)
         (lem-base:insert-string (lem-base:buffer-point buffer) |text|)
         (push (make-document :buffer buffer
                              :uri |uri|
