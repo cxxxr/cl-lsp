@@ -97,6 +97,16 @@
                                                           (lem-base:points-to-string start end)
                                                           ""))))))))
 
+(defun text-document-did-save (buffer)
+  (jsonrpc:notify *client*
+                  "textDocument/didSave"
+                  (list
+                   (convert-to-hash-table
+                    (make-instance
+                     '|DidSaveTextDocumentParams|
+                     :|textDocument| (make-instance '|TextDocumentIdentifier|
+                                                    :|uri| (lem:buffer-filename buffer)))))))
+
 (defun text-document-did-close (buffer)
   (jsonrpc:notify *client*
                   "textDocument/didClose"
