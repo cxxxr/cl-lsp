@@ -2,7 +2,8 @@
   (:use :cl
         :lsp.protocol
         :lsp.util
-        :lsp.editor))
+        :lsp.editor)
+  (:export :run))
 
 (in-package #:lsp.server)
 
@@ -256,5 +257,6 @@
            (make-instance '|Hover|
                           :|contents| ""))))))
 
-(defun main ()
+(defun run ()
+  (format t "server-listen~%")
   (jsonrpc:server-listen *mapper* :port 10003))
