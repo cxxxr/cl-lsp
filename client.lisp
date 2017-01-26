@@ -178,3 +178,9 @@
 (lem:define-command lsp-completion () ()
   (let ((items (completion (lem:current-point))))
     (lem:message "~S" items)))
+
+(lem:define-command test () ()
+  (lsp-start)
+  (lem:find-file "~/tmp/test.lisp")
+  (text-document-did-open (lem:current-buffer))
+  )
