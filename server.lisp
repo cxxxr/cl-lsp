@@ -83,6 +83,8 @@
 (defvar *initialized* nil)
 (defvar *shutdown* nil)
 
+(defvar *swank-fuzzy-completions* nil)
+
 (defun check-initialized ()
   (unless *initialized*
     (phlist "code" -32002
@@ -90,6 +92,8 @@
 
 (define-method "initialize" (params)
   (setq *initialized* t)
+  (swank:swank-require "SWANK-FUZZY")
+  (setf *swank-fuzzy-completions* (intern "FUZZY-COMPLETIONS" :SWANK))
   (let* ((initialize-params (convert-from-hash-table '|InitializeParams| params)))
     (declare (ignore initialize-params))
     (convert-to-hash-table
@@ -203,12 +207,12 @@
     (setf *documents* (delete uri *documents* :key #'document-uri :test #'equal)))
   (values))
 
-#+(or)
 (define-method "textDocument/completion" (params)
   (with-text-document-position (buffer point) params
     (let ((result
-           (swank:fuzzy-completions (lem-base:symbol-string-at-point point)
-                                    (buffer-package-name buffer))))
+           (funcall *swank-fuzzy-completions*
+                    (lem-base:symbol-string-at-point point)
+                    (buffer-package-name buffer))))
       (when result
         (destructuring-bind (completions timeout) result
           (declare (ignore timeout))
