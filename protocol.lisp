@@ -259,7 +259,7 @@
          (convert-from-hash-table type hash-value))
         ((protocol-list-p type)
          (mapcar (lambda (hash-value-1)
-                   (convert-from-hash-table type hash-value-1))
+                   (convert-from-hash-table (second type) hash-value-1))
                  hash-value))
         ((and (consp type)
               (eq 'or (first type)))
