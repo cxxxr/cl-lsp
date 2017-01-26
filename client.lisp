@@ -62,6 +62,10 @@
                                                           #+(or):|experimental|)
                                          #+(or):|trace|)))))))
 
+(defun init-hook ()
+  (lem:add-hook lem:*find-file-hook* 'text-document-did-open)
+  (lem:add-hook lem:*after-save-hook* 'text-document-did-save)
+  (lem:add-hook lem:*kill-buffer-hook* 'text-document-did-close))
 
 (defun text-document-did-open (buffer)
   (jsonrpc:notify *client*
