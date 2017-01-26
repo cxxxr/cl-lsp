@@ -81,46 +81,41 @@
          (swank::*buffer-readtable* ,readtable))
      ,@body))
 
-(defvar *initialized* nil)
-(defvar *shutdown* nil)
-
+(defvar *initialize-params* nil)
 (defvar *swank-fuzzy-completions* nil)
 
 (defun check-initialized ()
-  (unless *initialized*
+  (when (null *initialize-params*)
     (phlist "code" -32002
             "message" "did not initialize")))
 
 (define-method "initialize" (params)
-  (setq *initialized* t)
   (swank:swank-require "SWANK-FUZZY")
   (setf *swank-fuzzy-completions* (intern "FUZZY-COMPLETIONS" :SWANK))
-  (let* ((initialize-params (convert-from-hash-table '|InitializeParams| params)))
-    (declare (ignore initialize-params))
-    (convert-to-hash-table
-     (make-instance '|InitializeResult|
-                    :|capabilities| (make-instance '|ServerCapabilities|
-                                                   :|textDocumentSync| nil
-                                                   :|hoverProvider| nil
-                                                   :|completionProvider| nil
-                                                   :|signatureHelpProvider| nil
-                                                   :|definitionProvider| nil
-                                                   :|referencesProvider| nil
-                                                   :|documentHighlightProvider| nil
-                                                   :|documentSymbolProvider| nil
-                                                   :|workspaceSymbolProvider| nil
-                                                   :|codeActionProvider| nil
-                                                   :|codeLensProvider| nil
-                                                   :|documentFormattingProvider| nil
-                                                   :|documentRangeFormattingProvider| nil
-                                                   :|documentOnTypeFormattingProvider| nil
-                                                   :|renameProvider| nil
-                                                   :|documentLinkProvider| nil
-                                                   :|executeCommandProvider| nil
-                                                   :|experimental| nil)))))
+  (setf *initialize-params* (convert-from-hash-table '|InitializeParams| params))
+  (convert-to-hash-table
+   (make-instance '|InitializeResult|
+                  :|capabilities| (make-instance '|ServerCapabilities|
+                                                 :|textDocumentSync| nil
+                                                 :|hoverProvider| nil
+                                                 :|completionProvider| nil
+                                                 :|signatureHelpProvider| nil
+                                                 :|definitionProvider| nil
+                                                 :|referencesProvider| nil
+                                                 :|documentHighlightProvider| nil
+                                                 :|documentSymbolProvider| nil
+                                                 :|workspaceSymbolProvider| nil
+                                                 :|codeActionProvider| nil
+                                                 :|codeLensProvider| nil
+                                                 :|documentFormattingProvider| nil
+                                                 :|documentRangeFormattingProvider| nil
+                                                 :|documentOnTypeFormattingProvider| nil
+                                                 :|renameProvider| nil
+                                                 :|documentLinkProvider| nil
+                                                 :|executeCommandProvider| nil
+                                                 :|experimental| nil))))
 
 (define-method "shutdown" (params)
-  (setq *shutdown* t)
   t)
 
 (define-method "exit" (params)
