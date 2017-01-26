@@ -122,20 +122,37 @@
                                                     :|uri| (lem-base:buffer-filename buffer)))))))
 
 (defun hover (point)
-  (jsonrpc:call *client*
-                "textDocument/hover"
-                (list
-                 (convert-to-hash-table
-                  (make-instance '|TextDocumentPositionParams|
-                                 :|textDocument| (make-instance '|TextDocumentIdentifier|
-                                                                :|uri| (lem-base:buffer-filename
-                                                                        (lem-base:point-buffer point)))
-                                 :|position| (make-lsp-position point))))))
+  (convert-from-hash-table
+   '|Hover|
+   (jsonrpc:call *client*
+                 "textDocument/hover"
+                 (list
+                  (convert-to-hash-table
+                   (make-instance '|TextDocumentPositionParams|
+                                  :|textDocument| (make-instance '|TextDocumentIdentifier|
+                                                                 :|uri| (lem:buffer-filename
+                                                                         (lem:point-buffer point)))
+                                  :|position| (make-lsp-position point)))))))
 
-(defvar buf)
+(lem:define-command lsp-start () ()
+  (initialize))
 
-(defun main ()
-  (initialize)
-  (setf buf (lem-base:find-file-buffer "~/tmp/test.lisp"))
-  (text-document-did-open buf)
-  (hover (lem-base:character-offset (lem-base:buffer-point buf) 2)))
+(defun marked-string-to-string (contents)
+  (typecase contents
+    (list
+     (format nil "~{~A~%~}" (mapcar #'marked-string-to-string contents)))
+    (hash-table
+     (gethash "value" contents))
+    (string
+     contents)
+    (otherwise "")))
+
+(lem:define-command lsp-hover () ()
+  (let ((hover (hover (lem:current-point))))
+    (with-slots (|contents| |range|) hover
+      (declare (ignore |range|))
+      (let ((string (marked-string-to-string |contents|)))
+        (unless (string= string "")
+          (lem:with-pop-up-typeout-window (output (lem:get-buffer-create "*hover*") :erase t :focus t)
+            (princ string output)))))))
+
