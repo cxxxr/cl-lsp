@@ -9,46 +9,59 @@
 
 (defvar *client* nil)
 
+(macrolet ((def (name key)
+             (let ((_client (gensym "CLIENT"))
+                   (_value (gensym "VALUE")))
+               `(progn
+                  (defun ,name (,_client)
+                    (getf (jsonrpc:transport-data ,_client) ,key))
+                  (defun (setf ,name) (,_value ,_client)
+                    (setf (getf (jsonrpc:transport-data ,_client) ,key)
+                          ,_value))))))
+  (def client.server-capabilities :server-capabilities))
+
 (defun initialize ()
   (unless *client*
     (setf *client* (jsonrpc:client-connect :host "127.0.0.1" :port +port+))
-    (jsonrpc:call *client*
-                  "initialize"
-                  (list
-                   (convert-to-hash-table
-                    (make-instance '|InitializeParams|
-                                   :|processId| nil
-                                   :|rootPath| nil
-                                   :|rootUri| nil
-                                   #+(or):|initializationOptions|
-                                   :|capabilities| (make-instance
-                                                    '|ClientCapabilities|
-                                                    :|workspace| (make-instance
-                                                                  '|WorkspaceClientCapabilites|
-                                                                  :|applyEdit| t
-                                                                  #+(or):|didChangeConfiguration|
-                                                                  #+(or):|didChangeWatchedFiles|
-                                                                  #+(or):|symbol|
-                                                                  #+(or):|executeCommand|)
-                                                    :|textDocument| (make-instance
-                                                                     '|TextDocumentClientCapabilities|
-                                                                     :|synchronization| t
-                                                                     :|completion| t
-                                                                     :|hover| t
-                                                                     :|signatureHelp| t
-                                                                     :|references| t
-                                                                     :|documentHighlight| t
-                                                                     :|documentSymbol| t
-                                                                     :|formatting| t
-                                                                     :|rangeFormatting| t
-                                                                     :|onTypeFormatting| t
-                                                                     :|definition| t
-                                                                     :|codeAction| t
-                                                                     :|codeLens| t
-                                                                     :|documentLink| t
-                                                                     :|rename| t)
-                                                    #+(or):|experimental|)
-                                   #+(or):|trace|))))))
+    (setf (client.server-capabilities *client*)
+          (jsonrpc:call *client*
+                        "initialize"
+                        (list
+                         (convert-to-hash-table
+                          (make-instance '|InitializeParams|
+                                         :|processId| nil
+                                         :|rootPath| nil
+                                         :|rootUri| nil
+                                         #+(or):|initializationOptions|
+                                         :|capabilities| (make-instance
+                                                          '|ClientCapabilities|
+                                                          :|workspace| (make-instance
+                                                                        '|WorkspaceClientCapabilites|
+                                                                        :|applyEdit| t
+                                                                        #+(or):|didChangeConfiguration|
+                                                                        #+(or):|didChangeWatchedFiles|
+                                                                        #+(or):|symbol|
+                                                                        #+(or):|executeCommand|)
+                                                          :|textDocument| (make-instance
+                                                                           '|TextDocumentClientCapabilities|
+                                                                           :|synchronization| t
+                                                                           :|completion| t
+                                                                           :|hover| t
+                                                                           :|signatureHelp| t
+                                                                           :|references| t
+                                                                           :|documentHighlight| t
+                                                                           :|documentSymbol| t
+                                                                           :|formatting| t
+                                                                           :|rangeFormatting| t
+                                                                           :|onTypeFormatting| t
+                                                                           :|definition| t
+                                                                           :|codeAction| t
+                                                                           :|codeLens| t
+                                                                           :|documentLink| t
+                                                                           :|rename| t)
+                                                          #+(or):|experimental|)
+                                         #+(or):|trace|)))))))
+
 
 (defun text-document-did-open (buffer)
   (jsonrpc:notify *client*
