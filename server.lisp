@@ -210,33 +210,41 @@
 
 (define-method "textDocument/completion" (params)
   (with-text-document-position (buffer point) params
-    (let ((result
-           (funcall *swank-fuzzy-completions*
-                    (lem-base:symbol-string-at-point point)
-                    (buffer-package-name buffer))))
-      (when result
-        (destructuring-bind (completions timeout) result
-          (declare (ignore timeout))
-          (convert-to-hash-table
-           (make-instance
-            '|CompletionList|
-            :|isIncomplete| nil
-            :|items| (loop :for completion :in completions
-                           :collect (make-instance
-                                     '|CompletionItem|
-                                     :|label| (first completion)
-                                     ;:|kind|
-                                     ;:|detail|
-                                     ;:|documentation|
-                                     ;:|sortText|
-                                     ;:|filterText|
-                                     ;:|insertText|
-                                     ;:|insertTextFormat|
-                                     ;:|textEdit|
-                                     ;:|additionalTextEdits|
-                                     ;:|command|
-                                     ;:|data|
-                                     )))))))))
+    (lem-base:with-point ((start point)
+                          (end point))
+      (lem-base:skip-chars-backward start #'lem-base:syntax-symbol-char-p)
+      (lem-base:skip-chars-forward end #'lem-base:syntax-symbol-char-p)
+      (let ((result
+             (with-swank (:package (find-package (buffer-package-name buffer)))
+               (funcall *swank-fuzzy-completions*
+                        (lem-base:points-to-string start end)
+                        (buffer-package-name buffer)))))
+        (when result
+          (destructuring-bind (completions timeout) result
+            (declare (ignore timeout))
+            (convert-to-hash-table
+             (make-instance
+              '|CompletionList|
+              :|isIncomplete| nil
+              :|items| (loop :for completion :in completions
+                             :collect (make-instance
+                                       '|CompletionItem|
+                                       :|label| "falsy"
+                                       ;:|kind|
+                                       ;:|detail|
+                                       ;:|documentation|
+                                       ;:|sortText|
+                                       ;:|filterText|
+                                       ;:|insertText|
+                                       ;:|insertTextFormat|
+                                       :|textEdit| (make-instance
+                                                    '|TextEdit|
+                                                    :|range| (make-lsp-range start end)
+                                                    :|newText| (first completion))
+                                       ;:|additionalTextEdits|
+                                       ;:|command|
+                                       ;:|data|
+                                       ))))))))))
 
 (define-method "textDocument/hover" (params)
   (with-text-document-position (buffer point) params
