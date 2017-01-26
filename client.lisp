@@ -121,6 +121,25 @@
                      :|textDocument| (make-instance '|TextDocumentIdentifier|
                                                     :|uri| (lem-base:buffer-filename buffer)))))))
 
+(defun completion (point)
+  (let ((result
+         (jsonrpc:call *client*
+                       "textDocument/completion"
+                       (list
+                        (convert-to-hash-table
+                         (make-instance '|TextDocumentPositionParams|
+                                        :|textDocument| (make-instance
+                                                         '|TextDocumentIdentifier|
+                                                         :|uri| (lem:buffer-filename
+                                                                 (lem:point-buffer point)))
+                                        :|position| (make-lsp-position point)))))))
+    (if (listp result)
+        (loop :for completion-item :in result
+              :collect (convert-from-hash-table '|CompletionItem|
+                                                completion-item))
+        (slot-value (convert-from-hash-table '|CompletionList| result)
+                    '|items|))))
+
 (defun hover (point)
   (convert-from-hash-table
    '|Hover|
@@ -156,3 +175,6 @@
           (lem:with-pop-up-typeout-window (output (lem:get-buffer-create "*hover*") :erase t :focus t)
             (princ string output)))))))
 
+(lem:define-command lsp-completion () ()
+  (let ((items (completion (lem:current-point))))
+    (lem:message "~S" items)))
