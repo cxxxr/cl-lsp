@@ -76,12 +76,12 @@
                      '|DidOpenTextDocumentParams|
                      :|textDocument| (make-instance
                                       '|TextDocumentItem|
-                                      :|uri| (lem-base:buffer-filename buffer)
+                                      :|uri| (lem:buffer-filename buffer)
                                       :|languageId| "common-lisp"
                                       :|version| 0
-                                      :|text| (lem-base:points-to-string
-                                               (lem-base:buffers-start buffer)
-                                               (lem-base:buffers-end buffer))))))))
+                                      :|text| (lem:points-to-string
+                                               (lem:buffers-start buffer)
+                                               (lem:buffers-end buffer))))))))
 
 (defun text-document-did-change (buffer start end old-len)
   (jsonrpc:notify *client*
@@ -91,14 +91,14 @@
                     (make-instance
                      '|DidChangeTextDocumentParams|
                      :|textDocument| (make-instance '|VersionedTextDocumentIdentifier|
-                                                    :|version| (lem-base:buffer-version buffer)
-                                                    :|uri| (lem-base:buffer-filename buffer))
+                                                    :|version| (lem:buffer-version buffer)
+                                                    :|uri| (lem:buffer-filename buffer))
                      :|contentChanges| (list (make-instance
                                               '|TextDocumentContentChangeEvent|
                                               :|range| (make-lsp-range start end)
                                               :|rangeLength| old-len
                                               :|text| (if (zerop old-len)
-                                                          (lem-base:points-to-string start end)
+                                                          (lem:points-to-string start end)
                                                           ""))))))))
 
 (defun text-document-did-save (buffer)
@@ -119,7 +119,7 @@
                     (make-instance
                      '|DidCloseTextDocumentParams|
                      :|textDocument| (make-instance '|TextDocumentIdentifier|
-                                                    :|uri| (lem-base:buffer-filename buffer)))))))
+                                                    :|uri| (lem:buffer-filename buffer)))))))
 
 (defun completion (point)
   (let ((result
