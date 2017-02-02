@@ -90,7 +90,14 @@
             "message" "did not initialize")))
 
 (define-method "initialize" (params)
-  (swank:swank-require "SWANK-FUZZY")
+  (swank:swank-require '("SWANK-TRACE-DIALOG"
+                         "SWANK-PACKAGE-FU"
+                         "SWANK-PRESENTATIONS"
+                         "SWANK-FUZZY"
+                         "SWANK-FANCY-INSPECTOR"
+                         "SWANK-C-P-C"
+                         "SWANK-ARGLISTS"
+                         "SWANK-REPL"))
   (setf *swank-fuzzy-completions* (intern "FUZZY-COMPLETIONS" :SWANK))
   (setf *initialize-params* (convert-from-hash-table '|InitializeParams| params))
   (convert-to-hash-table
