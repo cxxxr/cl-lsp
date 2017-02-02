@@ -67,6 +67,33 @@
   (lem:add-hook lem:*after-save-hook* 'text-document-did-save)
   (lem:add-hook lem:*kill-buffer-hook* 'text-document-did-close))
 
+(defmacro modify-events (buffer)
+  `(lem:get-bvar 'modify-events :buffer ,buffer))
+
+(defun reflect-modify-events (buffer)
+  (let ((events (nreverse (modify-events buffer))))
+    (setf (modify-events buffer) nil)
+    (jsonrpc:notify *client*
+                    "textDocument/didChange"
+                    (list
+                     (convert-to-hash-table
+                      (make-instance
+                       '|DidChangeTextDocumentParams|
+                       :|textDocument| (make-instance '|VersionedTextDocumentIdentifier|
+                                                      :|version| (lem:buffer-version buffer)
+                                                      :|uri| (lem:buffer-filename buffer))
+                       :|contentChanges| events))))))
+
+(defun push-change-event (start end old-len)
+  (push (make-instance
+         '|TextDocumentContentChangeEvent|
+         :|range| (make-lsp-range start end)
+         :|rangeLength| old-len
+         :|text| (if (zerop old-len)
+                     (lem:points-to-string start end)
+                     ""))
+        (modify-events (lem:point-buffer start))))
+
 (defun text-document-did-open (buffer)
   (jsonrpc:notify *client*
                   "textDocument/didOpen"
@@ -82,24 +109,6 @@
                                       :|text| (lem:points-to-string
                                                (lem:buffers-start buffer)
                                                (lem:buffers-end buffer))))))))
-
-(defun text-document-did-change (buffer start end old-len)
-  (jsonrpc:notify *client*
-                  "textDocument/didChange"
-                  (list
-                   (convert-to-hash-table
-                    (make-instance
-                     '|DidChangeTextDocumentParams|
-                     :|textDocument| (make-instance '|VersionedTextDocumentIdentifier|
-                                                    :|version| (lem:buffer-version buffer)
-                                                    :|uri| (lem:buffer-filename buffer))
-                     :|contentChanges| (list (make-instance
-                                              '|TextDocumentContentChangeEvent|
-                                              :|range| (make-lsp-range start end)
-                                              :|rangeLength| old-len
-                                              :|text| (if (zerop old-len)
-                                                          (lem:points-to-string start end)
-                                                          ""))))))))
 
 (defun text-document-did-save (buffer)
   (jsonrpc:notify *client*
@@ -154,7 +163,10 @@
                                   :|position| (make-lsp-position point)))))))
 
 (lem:define-command lsp-start () ()
-  (initialize))
+  (initialize)
+  (lem:add-hook lem:*after-change-functions*
+                (lambda (start end old-len)
+                  (push-change-event start end old-len))))
 
 (defun marked-string-to-string (contents)
   (typecase contents
@@ -167,6 +179,7 @@
     (otherwise "")))
 
 (lem:define-command lsp-hover () ()
+  (reflect-modify-events (lem:current-buffer))
   (let ((hover (hover (lem:current-point))))
     (with-slots (|contents| |range|) hover
       (declare (ignore |range|))
@@ -176,6 +189,7 @@
             (princ string output)))))))
 
 (lem:define-command lsp-completion () ()
+  (reflect-modify-events (lem:current-buffer))
   (let ((items (completion (lem:current-point))))
     (lem:run-completion
      (loop :for item :in items
