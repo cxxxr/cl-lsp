@@ -177,7 +177,30 @@
 
 (lem:define-command lsp-completion () ()
   (let ((items (completion (lem:current-point))))
-    (lem:message "~S" items)))
+    (lem:run-completion
+     (loop :for item :in items
+           :collect (with-slots (|label|
+                                 |kind|
+                                 |detail|
+                                 |documentation|
+                                 |sortText|
+                                 |filterText|
+                                 |insertText|
+                                 |textEdit|
+                                 |additionalTextEdits|
+                                 |command|
+                                 |data|)
+                        item
+                      (with-slots (|range| |newText|) |textEdit|
+                        (with-slots (|start| |end|) |range|
+                          (lem:with-point ((point-start (lem:current-point))
+                                           (point-end (lem:current-point)))
+                            (move-to-lsp-position point-start |start|)
+                            (move-to-lsp-position point-end |end|)
+                            (lem:make-completion-item :label |newText|
+                                                      :detail |detail|
+                                                      :start point-start
+                                                      :end point-end)))))))))
 
 (lem:define-command test () ()
   (lsp-start)

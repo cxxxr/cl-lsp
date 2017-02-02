@@ -224,9 +224,9 @@
               :|items| (loop :for completion :in completions
                              :collect (make-instance
                                        '|CompletionItem|
-                                       :|label| "falsy"
+                                       :|label| (first completion)
                                        ;:|kind|
-                                       ;:|detail|
+                                       :|detail| (fourth completion)
                                        ;:|documentation|
                                        ;:|sortText|
                                        ;:|filterText|
