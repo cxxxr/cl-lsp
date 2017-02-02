@@ -243,6 +243,20 @@
   (|contents| :type t)
   (|range| :optional t :type |Range|))
 
+(define-interface |SignatureHelp| ()
+  (|signatures| :type (trivial-types:proper-list |SignatureInformation|))
+  (|activeSignature| :optional t :type number)
+  (|activeParameter| :optional t :type number))
+
+(define-interface |SignatureInformation| ()
+  (|label| :type string)
+  (|documentation| :optional t :type string)
+  (|parameters| :optional t :type (trivial-types:proper-list |ParameterInformation|)))
+
+(define-interface |ParameterInformation| ()
+  (|label| :type string)
+  (|documentation| :optional t :type string))
+
 (defun protocol-symbol-p (type)
   (when (member type *protocol-symbols*)
     type))
