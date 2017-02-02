@@ -217,7 +217,7 @@
       (lem-base:skip-chars-backward start #'lem-base:syntax-symbol-char-p)
       (lem-base:skip-chars-forward end #'lem-base:syntax-symbol-char-p)
       (let ((result
-             (with-swank (:package (find-package (buffer-package-name buffer)))
+             (with-swank ()
                (funcall *swank-fuzzy-completions*
                         (lem-base:points-to-string start end)
                         (buffer-package-name buffer)))))
@@ -252,7 +252,7 @@
   (with-text-document-position (buffer point) params
     (let ((describe-string
            (ignore-errors
-            (with-swank (:package (find-package (buffer-package-name buffer)))
+            (with-swank ()
               (swank:describe-symbol
                (lem-base:symbol-string-at-point point))))))
       (convert-to-hash-table
