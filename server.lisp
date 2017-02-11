@@ -267,6 +267,18 @@
            (make-instance '|Hover|
                           :|contents| ""))))))
 
+(defun autodoc-parsing-safe-p (point)
+  )
+
+(defun autodoc-parse-context (point)
+  (autodoc-parsing-safe-p point)
+  )
+
+(define-method "textDocument/signatureHelp" (params)
+  (with-text-document-position (buffer point) params
+    (autodoc-parse-context point)
+    ))
+
 (defun run ()
   (format t "server-listen~%")
   (jsonrpc:server-listen *mapper* :port 10003))
