@@ -136,12 +136,7 @@
                        "textDocument/completion"
                        (list
                         (convert-to-hash-table
-                         (make-instance '|TextDocumentPositionParams|
-                                        :|textDocument| (make-instance
-                                                         '|TextDocumentIdentifier|
-                                                         :|uri| (lem:buffer-filename
-                                                                 (lem:point-buffer point)))
-                                        :|position| (make-lsp-position point)))))))
+                         (make-text-document-position point))))))
     (if (listp result)
         (loop :for completion-item :in result
               :collect (convert-from-hash-table '|CompletionItem|
@@ -156,11 +151,16 @@
                  "textDocument/hover"
                  (list
                   (convert-to-hash-table
-                   (make-instance '|TextDocumentPositionParams|
-                                  :|textDocument| (make-instance '|TextDocumentIdentifier|
-                                                                 :|uri| (lem:buffer-filename
-                                                                         (lem:point-buffer point)))
-                                  :|position| (make-lsp-position point)))))))
+                   (make-text-document-position point))))))
+
+(defun signature-help (point)
+  (convert-from-hash-table
+   '|SignatureHelp|
+   (jsonrpc:call *client*
+                 "textDocument/signatureHelp"
+                 (list
+                  (convert-to-hash-table
+                   (make-text-document-position point))))))
 
 (lem:define-command lsp-start () ()
   (initialize)
@@ -215,6 +215,25 @@
                                                       :detail |detail|
                                                       :start point-start
                                                       :end point-end)))))))))
+
+(lem:define-command lsp-signature-help () ()
+  (reflect-modify-events (lem:current-buffer))
+  (let ((signature-help (signature-help (lem:current-point))))
+    (let ((text
+           (with-output-to-string (out)
+             (with-slots (|signatures| |activeSignature| |activeParameter|) signature-help
+               (declare (ignore |activeSignature| |activeParameter|))
+               (dolist (info |signatures|)
+                 (with-slots (|label| |documentation| |parameters|) info
+                   (declare (ignore |documentation|))
+                   (princ |label| out)
+                   (princ " " out)
+                   (dolist (parameter |parameters|)
+                     (with-slots (|label|) parameter
+                       (princ |label| out)
+                       (princ " " out)))
+                   (terpri out)))))))
+      (lem:message "~A" text))))
 
 (lem:define-command test () ()
   (lsp-start)

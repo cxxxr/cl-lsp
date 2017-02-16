@@ -2,7 +2,8 @@
   (:use :cl :lem-base :lsp.protocol)
   (:export :move-to-lsp-position
            :make-lsp-position
-           :make-lsp-range))
+           :make-lsp-range
+           :make-text-document-position))
 
 (in-package :lsp.editor)
 
@@ -28,3 +29,10 @@
     (make-instance '|Range|
                    :|start| (make-instance '|Position| :|line| start-line :|character| start-character)
                    :|end| (make-instance '|Position| :|line| end-line :|character| end-character))))
+
+(defun make-text-document-position (point)
+  (make-instance '|TextDocumentPositionParams|
+                 :|textDocument| (make-instance
+                                  '|TextDocumentIdentifier|
+                                  :|uri| (buffer-filename (point-buffer point)))
+                 :|position| (make-lsp-position point)))
