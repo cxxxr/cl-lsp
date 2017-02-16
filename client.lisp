@@ -67,8 +67,8 @@
   (lem:add-hook lem:*after-save-hook* 'text-document-did-save)
   (lem:add-hook lem:*kill-buffer-hook* 'text-document-did-close))
 
-(defmacro modify-events (buffer)
-  `(lem:get-bvar 'modify-events :buffer ,buffer))
+(defmacro modify-events (point-or-buffer)
+  `(lem:buffer-value ,point-or-buffer 'modify-events))
 
 (defun reflect-modify-events (buffer)
   (let ((events (nreverse (modify-events buffer))))
@@ -92,7 +92,7 @@
          :|text| (if (zerop old-len)
                      (lem:points-to-string start end)
                      ""))
-        (modify-events (lem:point-buffer start))))
+        (modify-events start)))
 
 (defun text-document-did-open (buffer)
   (jsonrpc:notify *client*
@@ -164,7 +164,7 @@
 
 (lem:define-command lsp-start () ()
   (initialize)
-  (lem:add-hook lem:*after-change-functions*
+  (lem:add-hook (lem:variable-value 'lem:after-change-functions :global)
                 (lambda (start end old-len)
                   (push-change-event start end old-len))))
 
