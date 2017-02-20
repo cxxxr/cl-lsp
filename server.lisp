@@ -355,6 +355,37 @@
                                                       :|label| arg))
                                                    (cdr arglist))))))))))
 
+(defun find-definitions (name buffer)
+  (with-swank (:package (find-package (buffer-package-name buffer)))
+    (swank:find-definitions-for-emacs name)))
+
+(define-method "textDocument/definition" (params)
+  (with-text-document-position (buffer point) params
+    (alexandria:when-let ((name (lem-base:symbol-string-at-point point)))
+      (let ((locations (make-array 0 :fill-pointer 0 :adjustable t)))
+        (dolist (def (find-definitions name buffer))
+          (optima:match def
+            ((list title
+                   (list :location
+                         (list :file file)
+                         (list :position offset)
+                         (list :snippet snippet)))
+             (declare (ignore title file snippet))
+             (lem-base:move-to-position point offset)
+             (let ((start (make-lsp-position point))
+                   (end (make-lsp-position (lem-base:form-offset point 1))))
+               (vector-push-extend (make-instance '|Location|
+                                                  :|uri| file
+                                                  :|range| (make-instance
+                                                            '|Range|
+                                                            :|start| start
+                                                            :|end| end))
+                                   locations)))))
+        (convert-to-hash-table
+         (if (= 1 (length locations))
+             (aref locations 0)
+             locations))))))
+
 (defun run ()
   (format t "server-listen~%")
   (jsonrpc:server-listen *mapper* :port 10003))
