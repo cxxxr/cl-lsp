@@ -37,10 +37,10 @@
 
 (define-interface |Location| ()
   (|uri| :type string)
-  (|range| :type range))
+  (|range| :type |Range|))
 
 (define-interface |Diagnostic| ()
-  (|range| :type range)
+  (|range| :type |Range|)
   (|severity| :optional t :type (or null number))
   (|code| :optional t :type (or null number string))
   (|source| :optional t :type (or null string))
