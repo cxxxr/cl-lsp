@@ -373,7 +373,8 @@
              (declare (ignore title file snippet))
              (lem-base:move-to-position point offset)
              (let ((start (make-lsp-position point))
-                   (end (make-lsp-position (lem-base:form-offset point 1))))
+                   (end (make-lsp-position (or (lem-base:form-offset point 1)
+                                               (lem-base:line-end point)))))
                (vector-push-extend (make-instance '|Location|
                                                   :|uri| file
                                                   :|range| (make-instance
