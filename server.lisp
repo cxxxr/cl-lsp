@@ -365,12 +365,11 @@
       (let ((locations (make-array 0 :fill-pointer 0 :adjustable t)))
         (dolist (def (find-definitions name buffer))
           (optima:match def
-            ((list title
+            ((list _
                    (list :location
                          (list :file file)
                          (list :position offset)
-                         (list :snippet snippet)))
-             (declare (ignore title file snippet))
+                         (list :snippet _)))
              (lem-base:move-to-position point offset)
              (let ((start (make-lsp-position point))
                    (end (make-lsp-position (or (lem-base:form-offset point 1)
