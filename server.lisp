@@ -370,17 +370,22 @@
                          (list :file file)
                          (list :position offset)
                          (list :snippet _)))
-             (lem-base:move-to-position point offset)
-             (let ((start (make-lsp-position point))
-                   (end (make-lsp-position (or (lem-base:form-offset point 1)
-                                               (lem-base:line-end point)))))
-               (vector-push-extend (make-instance '|Location|
-                                                  :|uri| file
-                                                  :|range| (make-instance
-                                                            '|Range|
-                                                            :|start| start
-                                                            :|end| end))
-                                   locations)))))
+             (multiple-value-bind (buffer new-buffer-p)
+                 (lem-base:find-file-buffer file)
+               (let ((point (lem-base:buffer-point buffer)))
+                 (lem-base:move-to-position point offset)
+                 (let ((start (make-lsp-position point))
+                       (end (make-lsp-position (or (lem-base:form-offset point 1)
+                                                   (lem-base:line-end point)))))
+                   (vector-push-extend (make-instance '|Location|
+                                                      :|uri| file
+                                                      :|range| (make-instance
+                                                                '|Range|
+                                                                :|start| start
+                                                                :|end| end))
+                                       locations))
+                 (when new-buffer-p
+                   (lem-base:delete-buffer buffer)))))))
         (convert-to-hash-table
          (if (= 1 (length locations))
              (aref locations 0)
