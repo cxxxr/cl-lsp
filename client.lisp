@@ -235,6 +235,42 @@
                    (terpri out)))))))
       (lem:message "~A" text))))
 
+(defvar *definition-locations* nil)
+(defvar *definition-index* 0)
+
+(defun goto-definition (location)
+  (with-slots (|uri| |range|) location
+    (lem:find-file |uri|)
+    (with-slots (|start|) |range|
+      (move-to-lsp-position (lem:current-point) |start|))))
+
+(lem:define-command lsp-goto-definition () ()
+  (reflect-modify-events (lem:current-buffer))
+  (let ((locations
+         (map 'vector
+              (lambda (ht)
+                (convert-from-hash-table '|Location| ht))
+              (alexandria:ensure-list
+               (jsonrpc:call *client*
+                             "textDocument/definition"
+                             (list
+                              (convert-to-hash-table
+                               (make-text-document-position (lem:current-point)))))))))
+    (when (< 0 (length locations))
+      (goto-definition (aref locations 0))
+      (when (< 1 (length locations))
+        (setf *definition-locations* locations)))))
+
+(lem:define-command lsp-next-definition () ()
+  (when (and *definition-locations*
+             (< (1+ *definition-index*) (length *definition-locations*)))
+    (goto-definition (aref *definition-locations* (incf *definition-index*)))))
+
+(lem:define-command lsp-previous-definition () ()
+  (when (and *definition-locations*
+             (< 0 *definition-index*))
+    (goto-definition (aref *definition-locations* (decf *definition-index*)))))
+
 (lem:define-command test () ()
   (lsp-start)
   (lem:find-file "~/tmp/test.lisp")
