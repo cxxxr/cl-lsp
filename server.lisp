@@ -54,25 +54,26 @@
   (declare (ignore buffer))
   "CL-USER")
 
-(defun call-with-text-document-position (params function)
-  (let* ((text-document-position-params
-          (convert-from-hash-table '|TextDocumentPositionParams| params))
-         (position
-          (slot-value text-document-position-params '|position|))
-         (uri
-          (slot-value (slot-value text-document-position-params '|textDocument|) '|uri|))
-         (document
-          (find-document uri)))
+(defun get-point-from-text-document-position (text-document-position-params)
+  (let* ((position (slot-value text-document-position-params '|position|))
+         (uri (slot-value (slot-value text-document-position-params '|textDocument|) '|uri|))
+         (document (find-document uri)))
     (when document
       (let* ((buffer
               (document-buffer document))
              (point
               (lem-base:buffer-point buffer)))
-        (lsp.editor:move-to-lsp-position point position)
-        (funcall function buffer point)))))
+        (move-to-lsp-position point position)
+        point))))
 
-(defmacro with-text-document-position ((buffer point) params &body body)
-  `(call-with-text-document-position ,params (lambda (,buffer ,point) ,@body)))
+(defun call-with-text-document-position (params function)
+  (let ((point (get-point-from-text-document-position
+                (convert-from-hash-table '|TextDocumentPositionParams|
+                                         params))))
+    (funcall function point)))
+
+(defmacro with-text-document-position ((point) params &body body)
+  `(call-with-text-document-position ,params (lambda (,point) ,@body)))
 
 (defmacro with-swank ((&key (package (find-package "CL-USER"))
                             (readtable '*readtable*))
@@ -168,7 +169,7 @@
                  (lem-base:insert-string point |text|))
                 (t
                  (with-slots (|start|) |range|
-                   (lsp.editor:move-to-lsp-position point |start|)
+                   (move-to-lsp-position point |start|)
                    (lem-base:delete-character point |rangeLength|)
                    (lem-base:insert-string point |text|)))))))))
 
@@ -211,7 +212,7 @@
   (values))
 
 (define-method "textDocument/completion" (params)
-  (with-text-document-position (buffer point) params
+  (with-text-document-position (point) params
     (lem-base:with-point ((start point)
                           (end point))
       (lem-base:skip-chars-backward start #'lem-base:syntax-symbol-char-p)
@@ -220,7 +221,7 @@
              (with-swank ()
                (funcall *swank-fuzzy-completions*
                         (lem-base:points-to-string start end)
-                        (buffer-package-name buffer)))))
+                        (buffer-package-name (lem-base:point-buffer point))))))
         (when result
           (destructuring-bind (completions timeout) result
             (declare (ignore timeout))
@@ -249,8 +250,7 @@
                                        ))))))))))
 
 (define-method "textDocument/hover" (params)
-  (with-text-document-position (buffer point) params
-    (declare (ignore buffer))
+  (with-text-document-position (point) params
     (let ((describe-string
            (ignore-errors
             (with-swank ()
@@ -339,8 +339,7 @@
                                 (lem-base:point-buffer point)))))))
 
 (define-method "textDocument/signatureHelp" (params)
-  (with-text-document-position (buffer point) params
-    (declare (ignore buffer))
+  (with-text-document-position (point) params
     (let ((arglist (arglist point)))
       (convert-to-hash-table
        (make-instance
@@ -360,10 +359,10 @@
     (swank:find-definitions-for-emacs name)))
 
 (define-method "textDocument/definition" (params)
-  (with-text-document-position (buffer point) params
+  (with-text-document-position (point) params
     (alexandria:when-let ((name (lem-base:symbol-string-at-point point)))
       (let ((locations (make-array 0 :fill-pointer 0 :adjustable t)))
-        (dolist (def (find-definitions name buffer))
+        (dolist (def (find-definitions name (lem-base:point-buffer point)))
           (optima:match def
             ((list _
                    (list :location
