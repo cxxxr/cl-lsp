@@ -257,6 +257,12 @@
   (|label| :type string)
   (|documentation| :optional t :type string))
 
+(define-interface |ReferenceParams| (|TextDocumentPositionParams|)
+ (|context| :type |ReferenceContext|))
+
+(define-interface |ReferenceContext| ()
+  (|includeDeclaration| :type boolean))
+
 (defun protocol-symbol-p (type)
   (when (member type *protocol-symbols*)
     type))
