@@ -390,6 +390,11 @@
              (aref locations 0)
              locations))))))
 
+(define-method "textDocument/references" (params)
+  (let* ((reference-params (convert-from-hash-table '|ReferenceParams| params))
+         (point (get-point-from-text-document-position reference-params)))
+    ))
+
 (defun run ()
   (format t "server-listen~%")
   (jsonrpc:server-listen *mapper* :port 10003))
