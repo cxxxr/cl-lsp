@@ -215,8 +215,8 @@
   (with-text-document-position (point) params
     (lem-base:with-point ((start point)
                           (end point))
-      (lem-base:skip-chars-backward start #'lem-base:syntax-symbol-char-p)
-      (lem-base:skip-chars-forward end #'lem-base:syntax-symbol-char-p)
+      (lem-base:skip-symbol-backward start)
+      (lem-base:skip-symbol-forward end)
       (let ((result
              (with-swank ()
                (funcall *swank-fuzzy-completions*
