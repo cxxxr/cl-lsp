@@ -164,7 +164,7 @@
 
 (lem:define-command lsp-start () ()
   (initialize)
-  (lem:add-hook (lem:variable-value 'lem:after-change-functions :global)
+  (lem:add-hook (lem:variable-value 'lem:after-change-functions :buffer (lem:current-buffer))
                 (lambda (start end old-len)
                   (push-change-event start end old-len))))
 
@@ -272,7 +272,6 @@
     (goto-definition (aref *definition-locations* (decf *definition-index*)))))
 
 (lem:define-command test () ()
-  (lsp-start)
   (lem:find-file "~/tmp/test.lisp")
-  (text-document-did-open (lem:current-buffer))
-  )
+  (lsp-start)
+  (text-document-did-open (lem:current-buffer)))

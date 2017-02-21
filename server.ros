@@ -14,6 +14,7 @@ exec ros -Q -- $0 "$@"
 
 (defun main (&rest argv)
   (declare (ignorable argv))
+  (swank:create-server :dont-close t :port 12345)
   (lsp.server:run))
 
 ;;; vim: set ft=lisp lisp:
