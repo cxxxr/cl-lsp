@@ -1,7 +1,6 @@
 (defpackage :lsp.server
   (:use :cl
         :lsp.protocol
-        :lsp.util
         :lsp.editor)
   (:export :run-tcp-mode
            :run-stdio-mode))
@@ -88,8 +87,10 @@
 
 (defun check-initialized ()
   (when (null *initialize-params*)
-    (phlist "code" -32002
-            "message" "did not initialize")))
+    (alexandria:plist-hash-table
+     (list "code" -32002
+           "message" "did not initialize")
+     :test 'equal)))
 
 (define-method "initialize" (params)
   (swank:swank-require '("SWANK-TRACE-DIALOG"
