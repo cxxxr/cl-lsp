@@ -1,8 +1,7 @@
-(defpackage :lsp.lisp-syntax
+(defpackage :cl-lsp/src/server/lisp-syntax
   (:use :cl :lem-base)
   (:export :*syntax-table*))
-
-(in-package :lsp.lisp-syntax)
+(in-package :cl-lsp/src/server/lisp-syntax)
 
 (defun %skip-expr-prefix (c1 c2 step-fn)
   (when c1

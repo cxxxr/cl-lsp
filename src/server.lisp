@@ -1,11 +1,17 @@
-(defpackage :lsp.server
+(defpackage :cl-lsp/src/server
   (:use :cl
-        :lsp.protocol
-        :lsp.editor)
+        :cl-lsp/src/general/protocol
+        :cl-lsp/src/general/editor)
+  (:import-from :jsonrpc)
+  (:import-from :yason)
+  (:import-from :uiop)
+  (:import-from :alexandria)
+  (:import-from :swank)
+  (:import-from :optima)
+  (:import-from :lem-base)
   (:export :run-tcp-mode
            :run-stdio-mode))
-
-(in-package #:lsp.server)
+(in-package :cl-lsp/src/server)
 
 (defvar *server* (jsonrpc:make-server))
 

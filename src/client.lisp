@@ -1,9 +1,11 @@
-(defpackage :lsp.client
+(defpackage :cl-lsp/src/client
   (:use :cl
-        :lsp.protocol
-        :lsp.editor))
-
-(in-package :lsp.client)
+        :cl-lsp/src/general/protocol
+        :cl-lsp/src/general/editor)
+  (:import-from :jsonrpc)
+  (:import-from :alexandria)
+  (:import-from :lem))
+(in-package :cl-lsp/src/client)
 
 (defparameter +port+ 10003)
 
