@@ -3,7 +3,8 @@
         :lsp.protocol
         :lsp.util
         :lsp.editor)
-  (:export :run))
+  (:export :run-tcp-mode
+           :run-stdio-mode))
 
 (in-package #:lsp.server)
 
@@ -395,6 +396,14 @@
          (point (get-point-from-text-document-position reference-params)))
     ))
 
-(defun run ()
-  (format t "server-listen~%")
-  (jsonrpc:server-listen *server* :port 10003))
+(defun run-tcp-mode (&key (port 10003))
+  (format t "server-listen~%mode:tcp~%port:~D~%" port)
+  (jsonrpc:server-listen *server* :port port :mode :tcp))
+
+(defun run-stdio-mode ()
+  (with-open-file (*standard-output* "~/LOG"
+                                     :direction :output
+                                     :if-does-not-exist :create
+                                     :if-exists :append)
+    (format *standard-output* "server-listen~%mode:stdio~%")
+    (jsonrpc:server-listen *server* :mode :stdio)))
