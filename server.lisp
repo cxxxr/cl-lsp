@@ -105,11 +105,11 @@
   (convert-to-hash-table
    (make-instance '|InitializeResult|
                   :|capabilities| (make-instance '|ServerCapabilities|
-                                                 :|textDocumentSync| nil
-                                                 :|hoverProvider| nil
-                                                 :|completionProvider| nil
-                                                 :|signatureHelpProvider| nil
-                                                 :|definitionProvider| nil
+                                                 :|textDocumentSync| t
+                                                 :|hoverProvider| t
+                                                 :|completionProvider| t
+                                                 :|signatureHelpProvider| t
+                                                 :|definitionProvider| t
                                                  :|referencesProvider| nil
                                                  :|documentHighlightProvider| nil
                                                  :|documentSymbolProvider| nil
