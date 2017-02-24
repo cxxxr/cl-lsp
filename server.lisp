@@ -7,7 +7,7 @@
 
 (in-package #:lsp.server)
 
-(defvar *mapper* (jsonrpc:make-mapper))
+(defvar *server* (jsonrpc:make-server))
 
 (defun method-log (name params)
   (format t "name: ~A~%" name)
@@ -27,7 +27,7 @@
   `(call-with-error-handle (lambda () ,@body)))
 
 (defmacro define-method (name (params) &body body)
-  `(jsonrpc:register-method *mapper*
+  `(jsonrpc:register-method *server*
                             ,name
                             (lambda (,params)
                               (declare (ignorable ,params))
@@ -397,4 +397,4 @@
 
 (defun run ()
   (format t "server-listen~%")
-  (jsonrpc:server-listen *mapper* :port 10003))
+  (jsonrpc:server-listen *server* :port 10003))
