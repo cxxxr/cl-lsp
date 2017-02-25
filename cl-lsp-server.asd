@@ -1,3 +1,3 @@
-(asdf:defsystem cl-lsp-server
+(asdf:defsystem :cl-lsp-server
   :class :package-inferred-system
   :depends-on ("cl-lsp/src/server"))
