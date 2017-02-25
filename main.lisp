@@ -1,7 +1,8 @@
-(defpackage :cl-lsp/src/server
+(defpackage :cl-lsp/main
   (:use :cl
-        :cl-lsp/src/general/protocol
-        :cl-lsp/src/general/editor)
+        :cl-lsp/protocol
+        :cl-lsp/editor
+        :cl-lsp/lisp-syntax)
   (:import-from :jsonrpc)
   (:import-from :yason)
   (:import-from :uiop)
@@ -11,7 +12,7 @@
   (:import-from :lem-base)
   (:export :run-tcp-mode
            :run-stdio-mode))
-(in-package :cl-lsp/src/server)
+(in-package :cl-lsp/main)
 
 (defvar *server* (jsonrpc:make-server))
 
@@ -147,7 +148,7 @@
     (with-slots (|uri| |languageId| |version| |text|)
         text-document
       (let ((buffer (lem-base:make-buffer |uri|)))
-        (setf (lem-base:buffer-syntax-table buffer) lsp.lisp-syntax:*syntax-table*)
+        (setf (lem-base:buffer-syntax-table buffer) *syntax-table*)
         (lem-base:insert-string (lem-base:buffer-point buffer) |text|)
         (push (make-document :buffer buffer
                              :uri |uri|

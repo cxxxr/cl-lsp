@@ -1,10 +1,10 @@
-(defpackage :cl-lsp/src/protocol
+(defpackage :cl-lsp/protocol
   (:use :cl)
   (:import-from :trivial-types)
   (:import-from :closer-mop)
   (:export :convert-from-hash-table
            :convert-to-hash-table))
-(in-package :cl-lsp/src/protocol)
+(in-package :cl-lsp/protocol)
 
 (defvar *protocol-symbols* '())
 

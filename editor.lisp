@@ -1,12 +1,12 @@
-(defpackage :cl-lsp/src/general/editor
+(defpackage :cl-lsp/editor
   (:use :cl
         :lem-base
-        :cl-lsp/src/general/protocol)
+        :cl-lsp/protocol)
   (:export :move-to-lsp-position
            :make-lsp-position
            :make-lsp-range
            :make-text-document-position))
-(in-package :cl-lsp/src/general/editor)
+(in-package :cl-lsp/editor)
 
 (defun move-to-lsp-position (point position)
   (declare (type point point)
