@@ -28,6 +28,8 @@
                             `(:documentation ,documentation)))))
                 slots))))
 
+(deftype |DocumentUri| () 'string)
+
 (define-interface |Position| ()
   (|line| :type number)
   (|character| :type number))
@@ -37,7 +39,7 @@
   (|end| :type |Position|))
 
 (define-interface |Location| ()
-  (|uri| :type string)
+  (|uri| :type |DocumentUri|)
   (|range| :type |Range|))
 
 (define-interface |Diagnostic| ()
@@ -57,13 +59,13 @@
   (|newText| :type string))
 
 (define-interface |WorkspaceEdit| ()
-  (|changes| :type nil))
+  (|changes|))
 
 (define-interface |TextDocumentIdentifier| ()
-  (|uri| :type string))
+  (|uri| :type |DocumentUri|))
 
 (define-interface |TextDocumentItem| ()
-  (|uri| :type string)
+  (|uri| :type |DocumentUri|)
   (|languageId| :type string)
   (|version| :type number)
   (|text| :type string))
@@ -79,7 +81,7 @@
 (define-interface |InitializeParams| ()
   (|processId| :type (or number null))
   (|rootPath| :type (or string null))
-  (|rootUri| :type (or string null))
+  (|rootUri| :type (or |DocumentUri| null))
   (|initializationOptions| :optional t)
   (|capabilities| :type |ClientCapabilities|)
   (|trace| :optional t))
