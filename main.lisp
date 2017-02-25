@@ -2,7 +2,8 @@
   (:use :cl
         :cl-lsp/protocol
         :cl-lsp/editor
-        :cl-lsp/lisp-syntax)
+        :cl-lsp/lisp-syntax
+        :cl-lsp/logger)
   (:import-from :jsonrpc)
   (:import-from :yason)
   (:import-from :uiop)
@@ -17,17 +18,17 @@
 (defvar *server* (jsonrpc:make-server))
 
 (defun method-log (name params)
-  (format t "name: ~A~%" name)
-  (format t "params: ~A~%"
-          (with-output-to-string (stream)
-            (yason:encode params stream))))
+  (log-format "name: ~A~%" name)
+  (log-format "params: ~A~%"
+              (with-output-to-string (stream)
+                (yason:encode params stream))))
 
 (defun call-with-error-handle (function)
   (handler-bind ((error (lambda (c)
-                          (format t "~A~%~%~A~%"
-                                  c
-                                  (with-output-to-string (stream)
-                                    (uiop:print-backtrace :stream stream :condition c))))))
+                          (log-format "~A~%~%~A~%"
+                                      c
+                                      (with-output-to-string (stream)
+                                        (uiop:print-backtrace :stream stream :condition c))))))
     (funcall function)))
 
 (defmacro with-error-handle (&body body)
@@ -405,13 +406,11 @@
     ))
 
 (defun run-tcp-mode (&key (port 10003))
-  (format t "server-listen~%mode:tcp~%port:~D~%" port)
-  (jsonrpc:server-listen *server* :port port :mode :tcp))
+  (with-logger-stream (*error-output*)
+    (log-format "server-listen~%mode:tcp~%port:~D~%" port)
+    (jsonrpc:server-listen *server* :port port :mode :tcp)))
 
 (defun run-stdio-mode ()
-  (with-open-file (*standard-output* "~/LOG"
-                                     :direction :output
-                                     :if-does-not-exist :create
-                                     :if-exists :append)
-    (format *standard-output* "server-listen~%mode:stdio~%")
+  (with-log-file ("~/lsp-log")
+    (log-format "server-listen~%mode:stdio~%")
     (jsonrpc:server-listen *server* :mode :stdio)))
