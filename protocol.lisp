@@ -119,6 +119,14 @@
 (define-interface |InitializeError| ()
   (|retry| :type boolean))
 
+(export '(|TextDocumentSyncKind.None|
+          |TextDocumentSyncKind.Full|
+          |TextDocumentSyncKind.Incremental|))
+
+(defparameter |TextDocumentSyncKind.None| 0)
+(defparameter |TextDocumentSyncKind.Full| 1)
+(defparameter |TextDocumentSyncKind.Incremental| 2)
+
 (define-interface |CompletionOptions| ()
   (|resolveProvider| :optional t :type boolean)
   (|triggerCharacters| :optional t :type (trivial-types:proper-list string)))

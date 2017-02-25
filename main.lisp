@@ -112,26 +112,43 @@
   (setf *swank-fuzzy-completions* (intern "FUZZY-COMPLETIONS" :SWANK))
   (setf *initialize-params* (convert-from-hash-table '|InitializeParams| params))
   (convert-to-hash-table
-   (make-instance '|InitializeResult|
-                  :|capabilities| (make-instance '|ServerCapabilities|
-                                                 :|textDocumentSync| t
-                                                 :|hoverProvider| t
-                                                 :|completionProvider| t
-                                                 :|signatureHelpProvider| t
-                                                 :|definitionProvider| t
-                                                 :|referencesProvider| nil
-                                                 :|documentHighlightProvider| nil
-                                                 :|documentSymbolProvider| nil
-                                                 :|workspaceSymbolProvider| nil
-                                                 :|codeActionProvider| nil
-                                                 :|codeLensProvider| nil
-                                                 :|documentFormattingProvider| nil
-                                                 :|documentRangeFormattingProvider| nil
-                                                 :|documentOnTypeFormattingProvider| nil
-                                                 :|renameProvider| nil
-                                                 :|documentLinkProvider| nil
-                                                 :|executeCommandProvider| nil
-                                                 :|experimental| nil))))
+   (make-instance
+    '|InitializeResult|
+    :|capabilities| (make-instance
+                     '|ServerCapabilities|
+                     :|textDocumentSync| (make-instance
+                                          '|TextDocumentSyncOptions|
+                                          :|openClose| t
+                                          :|change| |TextDocumentSyncKind.Incremental|
+                                          ;:|willSave| nil
+                                          ;:|willSaveWaitUntil| nil
+                                          ;:|save| ...
+                                          )
+                     :|hoverProvider| t
+                     :|completionProvider| (make-instance
+                                            '|CompletionOptions|
+                                            :|resolveProvider| t
+                                            :|triggerCharacters| (loop :for code
+                                                                       :from (char-code #\a)
+                                                                       :below (char-code #\z)
+                                                                       :collect (string (code-char code))))
+                     :|signatureHelpProvider| (make-instance
+                                               '|SignatureHelpOptions|
+                                               :|triggerCharacters| (list " "))
+                     :|definitionProvider| t
+                     :|referencesProvider| nil
+                     :|documentHighlightProvider| nil
+                     :|documentSymbolProvider| nil
+                     :|workspaceSymbolProvider| nil
+                     :|codeActionProvider| nil
+                     :|codeLensProvider| nil
+                     :|documentFormattingProvider| nil
+                     :|documentRangeFormattingProvider| nil
+                     :|documentOnTypeFormattingProvider| nil
+                     :|renameProvider| nil
+                     :|documentLinkProvider| nil
+                     :|executeCommandProvider| nil
+                     :|experimental| nil))))
 
 (define-method "shutdown" (params)
   t)
