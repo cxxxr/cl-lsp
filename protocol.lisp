@@ -274,6 +274,13 @@
 (define-interface |ReferenceContext| ()
   (|includeDeclaration| :type boolean))
 
+(define-interface |DocumentLinkParams| ()
+  (|textDocument| :type |TextDocumentIdentifier|))
+
+(define-interface |DocumentLink| ()
+  (|range| :type |Range|)
+  (|target| :optional t :type |DocumentUri|))
+
 (defun protocol-symbol-p (type)
   (when (member type *protocol-symbols*)
     type))

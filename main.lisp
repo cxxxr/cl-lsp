@@ -417,10 +417,27 @@
              (aref locations 0)
              locations))))))
 
+#+(or)
 (define-method "textDocument/references" (params)
   (let* ((reference-params (convert-from-hash-table '|ReferenceParams| params))
          (point (get-point-from-text-document-position reference-params)))
     ))
+
+(define-method "textDocument/documentLink" (params)
+  (let* ((document-link-params
+          (convert-from-hash-table '|DocumentLinkParams| params))
+         (text-document
+          (slot-value document-link-params '|textDocument|))
+         (uri
+          (slot-value text-document '|uri|)))
+    (list (convert-to-hash-table
+           (make-instance
+            '|DocumentLink|
+            :|range| (make-instance
+                      '|Range|
+                      :|start| (make-instance '|Position| :|line| 0 :|character| (length "file://"))
+                      :|end| (make-instance '|Position| :|line| 0 :|character| (length uri)))
+            :|target| uri)))))
 
 (defun run-tcp-mode (&key (port 10003))
   (with-logger-stream (*error-output*)
