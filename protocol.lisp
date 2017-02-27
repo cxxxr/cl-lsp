@@ -78,6 +78,14 @@
   (|textDocument| :type |TextDocumentIdentifier|)
   (|position| :type |Position|))
 
+(define-interface |DocumentFilter| ()
+  (|language| :optional t :type string)
+  (|scheme| :optional t :type string)
+  (|pattern| :optional t :type string))
+
+(deftype |DocumentSelector| ()
+  '(trivial-types:proper-list |DocumentFilter|))
+
 (define-interface |InitializeParams| ()
   (|processId| :type (or number null))
   (|rootPath| :type (or string null))
@@ -206,6 +214,9 @@
 (define-interface |TextDocumentRegistrationOptions| ()
   (|documentSelector| :type (or |DocumentSelector| |null|)))
 
+(define-interface |TextDocumentChangeRegistrationOptions| (|TextDocumentRegistrationOptions|)
+  (|syncKind| :type number))
+
 (define-interface |Unregistration| ()
   (|id| :type string)
   (|method| :type string))
@@ -273,6 +284,14 @@
 
 (define-interface |ReferenceContext| ()
   (|includeDeclaration| :type boolean))
+
+(define-interface |CodeLensParams| ()
+  (|textDocument| :type |TextDocumentIdentifier|))
+
+(define-interface |CodeLens| ()
+  (|range| :type |Range|)
+  (|command| :optional t :type |Command|)
+  (|data| :optional t :type t))
 
 (define-interface |DocumentLinkParams| ()
   (|textDocument| :type |TextDocumentIdentifier|))
