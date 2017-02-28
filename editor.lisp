@@ -13,7 +13,7 @@
            (type |Position| position))
   (with-slots (|line| |character|) position
     (move-to-line point (1+ |line|))
-    (character-offset point |character|)
+    (line-offset point 0 |character|)
     point))
 
 (defun make-lsp-position (point)

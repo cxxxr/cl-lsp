@@ -62,23 +62,16 @@
   (declare (ignore buffer))
   "CL-USER")
 
-(defun get-point-from-text-document-position (text-document-position-params)
+(defun call-with-text-document-position (text-document-position-params function)
   (let* ((position (slot-value text-document-position-params '|position|))
-         (uri (slot-value (slot-value text-document-position-params '|textDocument|) '|uri|))
-         (document (find-document uri)))
-    (when document
-      (let* ((buffer
-              (document-buffer document))
-             (point
-              (lem-base:buffer-point buffer)))
+         (uri (slot-value (slot-value text-document-position-params '|textDocument|) '|uri|)))
+    (multiple-value-bind (buffer)
+        (lem-base:find-file-buffer (subseq uri (length "file://")))
+      (setf (lem-base:buffer-syntax-table buffer) *syntax-table*)
+      (let ((point (lem-base:buffer-point buffer)))
         (move-to-lsp-position point position)
-        point))))
-
-(defun call-with-text-document-position (params function)
-  (let ((point (get-point-from-text-document-position
-                (convert-from-hash-table '|TextDocumentPositionParams|
-                                         params))))
-    (funcall function point)))
+        (unwind-protect (funcall function point)
+          (lem-base:delete-buffer buffer))))))
 
 (defmacro with-text-document-position ((point) params &body body)
   `(call-with-text-document-position ,params (lambda (,point) ,@body)))
@@ -245,64 +238,63 @@
   (values))
 
 (define-method "textDocument/completion" (params)
-  (with-text-document-position (point) params
-    (when point
-      (lem-base:with-point ((start point)
-                            (end point))
-        (lem-base:skip-symbol-backward start)
-        (lem-base:skip-symbol-forward end)
-        (let ((result
-               (with-swank ()
-                 (funcall *swank-fuzzy-completions*
-                          (lem-base:points-to-string start end)
-                          (buffer-package-name (lem-base:point-buffer point))))))
-          (when result
-            (destructuring-bind (completions timeout) result
-              (declare (ignore timeout))
-              (convert-to-hash-table
-               (make-instance
-                '|CompletionList|
-                :|isIncomplete| nil
-                :|items| (loop :for completion :in completions
-                               :collect (make-instance
-                                         '|CompletionItem|
-                                         :|label| (first completion)
-                                         ;:|kind|
-                                         :|detail| (fourth completion)
-                                         ;:|documentation|
-                                         ;:|sortText|
-                                         ;:|filterText|
-                                         ;:|insertText|
-                                         ;:|insertTextFormat|
-                                         :|textEdit| (make-instance
-                                                      '|TextEdit|
-                                                      :|range| (make-lsp-range start end)
-                                                      :|newText| (first completion))
-                                         ;:|additionalTextEdits|
-                                         ;:|command|
-                                         ;:|data|
-                                         )))))))))))
+  (with-text-document-position (point)
+      (convert-from-hash-table '|TextDocumentPositionParams| params)
+    (lem-base:with-point ((start point)
+                          (end point))
+      (lem-base:skip-symbol-backward start)
+      (lem-base:skip-symbol-forward end)
+      (let ((result
+             (with-swank ()
+               (funcall *swank-fuzzy-completions*
+                        (lem-base:points-to-string start end)
+                        (buffer-package-name (lem-base:point-buffer point))))))
+        (when result
+          (destructuring-bind (completions timeout) result
+            (declare (ignore timeout))
+            (convert-to-hash-table
+             (make-instance
+              '|CompletionList|
+              :|isIncomplete| nil
+              :|items| (loop :for completion :in completions
+                             :collect (make-instance
+                                       '|CompletionItem|
+                                       :|label| (first completion)
+                                       ;:|kind|
+                                       :|detail| (fourth completion)
+                                       ;:|documentation|
+                                       ;:|sortText|
+                                       ;:|filterText|
+                                       ;:|insertText|
+                                       ;:|insertTextFormat|
+                                       :|textEdit| (make-instance
+                                                    '|TextEdit|
+                                                    :|range| (make-lsp-range start end)
+                                                    :|newText| (first completion))
+                                       ;:|additionalTextEdits|
+                                       ;:|command|
+                                       ;:|data|
+                                       ))))))))))
 
 (define-method "textDocument/hover" (params)
-  (with-text-document-position (point) params
-    (when point
-      (let* ((symbol-string (lem-base:symbol-string-at-point point))
-             (describe-string
-              (ignore-errors
-               (with-swank ()
-                 (swank:describe-symbol symbol-string)))))
-        (log-format "~A" symbol-string)
-        (convert-to-hash-table
-         (if describe-string
-             (lem-base:with-point ((start point)
-                                   (end point))
-               (lem-base:skip-chars-backward start #'lem-base:syntax-symbol-char-p)
-               (lem-base:skip-chars-forward end #'lem-base:syntax-symbol-char-p)
-               (make-instance '|Hover|
-                              :|contents| describe-string
-                              :|range| (make-lsp-range start end)))
+  (with-text-document-position (point)
+      (convert-from-hash-table '|TextDocumentPositionParams| params)
+    (let* ((symbol-string (lem-base:symbol-string-at-point point))
+           (describe-string
+            (ignore-errors
+             (with-swank ()
+               (swank:describe-symbol symbol-string)))))
+      (convert-to-hash-table
+       (if describe-string
+           (lem-base:with-point ((start point)
+                                 (end point))
+             (lem-base:skip-chars-backward start #'lem-base:syntax-symbol-char-p)
+             (lem-base:skip-chars-forward end #'lem-base:syntax-symbol-char-p)
              (make-instance '|Hover|
-                            :|contents| "")))))))
+                            :|contents| describe-string
+                            :|range| (make-lsp-range start end)))
+           (make-instance '|Hover|
+                          :|contents| ""))))))
 
 #+(or)
 (progn
@@ -375,28 +367,29 @@
                                 (lem-base:point-buffer point)))))))
 
 (define-method "textDocument/signatureHelp" (params)
-  (with-text-document-position (point) params
-    (when point
-      (let ((arglist (arglist point)))
-        (convert-to-hash-table
-         (make-instance
-          '|SignatureHelp|
-          :|signatures| (when arglist
-                          (list (make-instance
-                                 '|SignatureInformation|
-                                 :|label| (car arglist)
-                                 :|parameters| (mapcar (lambda (arg)
-                                                         (make-instance
-                                                          '|ParameterInformation|
-                                                          :|label| arg))
-                                                       (cdr arglist)))))))))))
+  (with-text-document-position (point)
+      (convert-from-hash-table '|TextDocumentPositionParams| params)
+    (let ((arglist (arglist point)))
+      (convert-to-hash-table
+       (make-instance
+        '|SignatureHelp|
+        :|signatures| (when arglist
+                        (list (make-instance
+                               '|SignatureInformation|
+                               :|label| (car arglist)
+                               :|parameters| (mapcar (lambda (arg)
+                                                       (make-instance
+                                                        '|ParameterInformation|
+                                                        :|label| arg))
+                                                     (cdr arglist))))))))))
 
 (defun find-definitions (name buffer)
   (with-swank (:package (find-package (buffer-package-name buffer)))
     (swank:find-definitions-for-emacs name)))
 
 (define-method "textDocument/definition" (params)
-  (with-text-document-position (point) params
+  (with-text-document-position (point)
+      (convert-from-hash-table '|TextDocumentPositionParams| params)
     (alexandria:when-let ((name (lem-base:symbol-string-at-point point)))
       (let ((locations (make-array 0 :fill-pointer 0 :adjustable t)))
         (dolist (def (find-definitions name (lem-base:point-buffer point)))
