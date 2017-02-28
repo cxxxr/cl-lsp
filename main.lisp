@@ -150,11 +150,17 @@
                      :|executeCommandProvider| nil
                      :|experimental| nil))))
 
+(define-method "initialized" (params)
+  nil)
+
 (define-method "shutdown" (params)
   t)
 
 (define-method "exit" (params)
   (values))
+
+(define-method "workspace/didChangeConfiguration" (params)
+  nil)
 
 (define-method "textDocument/didOpen" (params)
   (let* ((did-open-text-document-params
@@ -240,60 +246,63 @@
 
 (define-method "textDocument/completion" (params)
   (with-text-document-position (point) params
-    (lem-base:with-point ((start point)
-                          (end point))
-      (lem-base:skip-symbol-backward start)
-      (lem-base:skip-symbol-forward end)
-      (let ((result
-             (with-swank ()
-               (funcall *swank-fuzzy-completions*
-                        (lem-base:points-to-string start end)
-                        (buffer-package-name (lem-base:point-buffer point))))))
-        (when result
-          (destructuring-bind (completions timeout) result
-            (declare (ignore timeout))
-            (convert-to-hash-table
-             (make-instance
-              '|CompletionList|
-              :|isIncomplete| nil
-              :|items| (loop :for completion :in completions
-                             :collect (make-instance
-                                       '|CompletionItem|
-                                       :|label| (first completion)
-                                       ;:|kind|
-                                       :|detail| (fourth completion)
-                                       ;:|documentation|
-                                       ;:|sortText|
-                                       ;:|filterText|
-                                       ;:|insertText|
-                                       ;:|insertTextFormat|
-                                       :|textEdit| (make-instance
-                                                    '|TextEdit|
-                                                    :|range| (make-lsp-range start end)
-                                                    :|newText| (first completion))
-                                       ;:|additionalTextEdits|
-                                       ;:|command|
-                                       ;:|data|
-                                       ))))))))))
+    (when point
+      (lem-base:with-point ((start point)
+                            (end point))
+        (lem-base:skip-symbol-backward start)
+        (lem-base:skip-symbol-forward end)
+        (let ((result
+               (with-swank ()
+                 (funcall *swank-fuzzy-completions*
+                          (lem-base:points-to-string start end)
+                          (buffer-package-name (lem-base:point-buffer point))))))
+          (when result
+            (destructuring-bind (completions timeout) result
+              (declare (ignore timeout))
+              (convert-to-hash-table
+               (make-instance
+                '|CompletionList|
+                :|isIncomplete| nil
+                :|items| (loop :for completion :in completions
+                               :collect (make-instance
+                                         '|CompletionItem|
+                                         :|label| (first completion)
+                                         ;:|kind|
+                                         :|detail| (fourth completion)
+                                         ;:|documentation|
+                                         ;:|sortText|
+                                         ;:|filterText|
+                                         ;:|insertText|
+                                         ;:|insertTextFormat|
+                                         :|textEdit| (make-instance
+                                                      '|TextEdit|
+                                                      :|range| (make-lsp-range start end)
+                                                      :|newText| (first completion))
+                                         ;:|additionalTextEdits|
+                                         ;:|command|
+                                         ;:|data|
+                                         )))))))))))
 
 (define-method "textDocument/hover" (params)
   (with-text-document-position (point) params
-    (let ((describe-string
-           (ignore-errors
-            (with-swank ()
-              (swank:describe-symbol
-               (lem-base:symbol-string-at-point point))))))
-      (convert-to-hash-table
-       (if describe-string
-           (lem-base:with-point ((start point)
-                                 (end point))
-             (lem-base:skip-chars-backward start #'lem-base:syntax-symbol-char-p)
-             (lem-base:skip-chars-forward end #'lem-base:syntax-symbol-char-p)
+    (when point
+      (let* ((symbol-string (lem-base:symbol-string-at-point point))
+             (describe-string
+              (ignore-errors
+               (with-swank ()
+                 (swank:describe-symbol symbol-string)))))
+        (log-format "~A" symbol-string)
+        (convert-to-hash-table
+         (if describe-string
+             (lem-base:with-point ((start point)
+                                   (end point))
+               (lem-base:skip-chars-backward start #'lem-base:syntax-symbol-char-p)
+               (lem-base:skip-chars-forward end #'lem-base:syntax-symbol-char-p)
+               (make-instance '|Hover|
+                              :|contents| describe-string
+                              :|range| (make-lsp-range start end)))
              (make-instance '|Hover|
-                            :|contents| describe-string
-                            :|range| (make-lsp-range start end)))
-           (make-instance '|Hover|
-                          :|contents| ""))))))
+                            :|contents| "")))))))
 
 #+(or)
 (progn
@@ -367,19 +376,20 @@
 
 (define-method "textDocument/signatureHelp" (params)
   (with-text-document-position (point) params
-    (let ((arglist (arglist point)))
-      (convert-to-hash-table
-       (make-instance
-        '|SignatureHelp|
-        :|signatures| (when arglist
-                      (list (make-instance
-                             '|SignatureInformation|
-                             :|label| (car arglist)
-                             :|parameters| (mapcar (lambda (arg)
-                                                     (make-instance
-                                                      '|ParameterInformation|
-                                                      :|label| arg))
-                                                   (cdr arglist))))))))))
+    (when point
+      (let ((arglist (arglist point)))
+        (convert-to-hash-table
+         (make-instance
+          '|SignatureHelp|
+          :|signatures| (when arglist
+                          (list (make-instance
+                                 '|SignatureInformation|
+                                 :|label| (car arglist)
+                                 :|parameters| (mapcar (lambda (arg)
+                                                         (make-instance
+                                                          '|ParameterInformation|
+                                                          :|label| arg))
+                                                       (cdr arglist)))))))))))
 
 (defun find-definitions (name buffer)
   (with-swank (:package (find-package (buffer-package-name buffer)))
