@@ -433,6 +433,15 @@
          (point (get-point-from-text-document-position reference-params)))
     ))
 
+(define-method "textDocument/codeLens" (params)
+  #+(or)
+  (let* ((code-lens-params
+          (convert-from-hash-table '|CodeLensParams| params))
+         (text-document (slot-value code-lens-params '|textDocument|))
+         (uri (slot-value text-document '|uri|)))
+    (declare (ignore uri)))
+  (vector))
+
 (define-method "textDocument/documentLink" (params)
   (let* ((document-link-params
           (convert-from-hash-table '|DocumentLinkParams| params))
