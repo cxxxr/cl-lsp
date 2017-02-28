@@ -449,14 +449,15 @@
           (slot-value document-link-params '|textDocument|))
          (uri
           (slot-value text-document '|uri|)))
+    (declare (ignore uri))
     (list (convert-to-hash-table
            (make-instance
             '|DocumentLink|
             :|range| (make-instance
                       '|Range|
-                      :|start| (make-instance '|Position| :|line| 0 :|character| (length "file://"))
-                      :|end| (make-instance '|Position| :|line| 0 :|character| (length uri)))
-            :|target| uri)))))
+                      :|start| (make-instance '|Position| :|line| 0 :|character| 0)
+                      :|end| (make-instance '|Position| :|line| 0 :|character| 0))
+            :|target| nil)))))
 
 (defun run-tcp-mode (&key (port 10003))
   (with-logger-stream (*error-output*)
