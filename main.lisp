@@ -361,10 +361,9 @@
   (lem-base:skip-whitespace-forward point)
   (let ((symbol-string (lem-base:symbol-string-at-point point)))
     (when symbol-string
-      (parse-arglist-string
-       (swank:operator-arglist symbol-string
-                               (buffer-package-name
-                                (lem-base:point-buffer point)))))))
+      (swank:operator-arglist symbol-string
+                              (buffer-package-name
+                               (lem-base:point-buffer point))))))
 
 (define-method "textDocument/signatureHelp" (params)
   (with-text-document-position (point)
@@ -376,12 +375,7 @@
         :|signatures| (when arglist
                         (list (make-instance
                                '|SignatureInformation|
-                               :|label| (car arglist)
-                               :|parameters| (mapcar (lambda (arg)
-                                                       (make-instance
-                                                        '|ParameterInformation|
-                                                        :|label| arg))
-                                                     (cdr arglist))))))))))
+                               :|label| arglist))))))))
 
 (defun find-definitions (name buffer)
   (with-swank (:package (find-package (buffer-package-name buffer)))
