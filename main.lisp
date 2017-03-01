@@ -385,7 +385,7 @@
   (with-text-document-position (point)
       (convert-from-hash-table '|TextDocumentPositionParams| params)
     (alexandria:when-let ((name (lem-base:symbol-string-at-point point)))
-      (let ((locations (make-array 0 :fill-pointer 0 :adjustable t)))
+      (let ((locations '()))
         (dolist (def (find-definitions name (lem-base:point-buffer point)))
           (optima:match def
             ((list _
@@ -393,26 +393,14 @@
                          (list :file file)
                          (list :position offset)
                          (list :snippet _)))
-             (multiple-value-bind (buffer new-buffer-p)
-                 (lem-base:find-file-buffer file)
-               (let ((point (lem-base:buffer-point buffer)))
-                 (lem-base:move-to-position point offset)
-                 (let ((start (make-lsp-position point))
-                       (end (make-lsp-position (or (lem-base:form-offset point 1)
-                                                   (lem-base:line-end point)))))
-                   (vector-push-extend (make-instance '|Location|
-                                                      :|uri| file
-                                                      :|range| (make-instance
-                                                                '|Range|
-                                                                :|start| start
-                                                                :|end| end))
-                                       locations))
-                 (when new-buffer-p
-                   (lem-base:delete-buffer buffer)))))))
-        (convert-to-hash-table
-         (if (= 1 (length locations))
-             (aref locations 0)
-             locations))))))
+             (push (convert-to-hash-table
+                    (file-location file offset))
+                   locations))))
+        (if (alexandria:length= locations 1)
+            (first locations)
+            (if (null locations)
+                (vector)
+                locations))))))
 
 (define-method "textDocument/references" (params)
   (with-text-document-position (point)
