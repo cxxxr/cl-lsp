@@ -143,7 +143,7 @@
                                                '|SignatureHelpOptions|
                                                :|triggerCharacters| (list " "))
                      :|definitionProvider| t
-                     :|referencesProvider| nil
+                     :|referencesProvider| t
                      :|documentHighlightProvider| nil
                      :|documentSymbolProvider| nil
                      :|workspaceSymbolProvider| nil
