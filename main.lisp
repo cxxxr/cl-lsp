@@ -414,11 +414,23 @@
              (aref locations 0)
              locations))))))
 
-#+(or)
 (define-method "textDocument/references" (params)
-  (let* ((reference-params (convert-from-hash-table '|ReferenceParams| params))
-         (point (get-point-from-text-document-position reference-params)))
-    ))
+  (with-text-document-position (point)
+      (convert-from-hash-table '|ReferenceParams| params)
+    (let ((symbol-string (lem-base:symbol-string-at-point point))
+          (locations '()))
+      (loop :for (type . definitions)
+            :in (swank:xrefs '(:calls :macroexpands :binds :references :sets :specializes)
+                             symbol-string)
+            :do (loop :for def :in definitions
+                      :do (optima:match def
+                            ((list _
+                                   (list :location
+                                         (list :file file)
+                                         (list :position offset)
+                                         (list :snippet _)))
+                             (push (file-location file offset) locations)))))
+      locations)))
 
 (define-method "textDocument/codeLens" (params)
   #+(or)

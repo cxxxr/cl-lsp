@@ -5,7 +5,8 @@
   (:export :move-to-lsp-position
            :make-lsp-position
            :make-lsp-range
-           :make-text-document-position))
+           :make-text-document-position
+           :file-location))
 (in-package :cl-lsp/editor)
 
 (defun move-to-lsp-position (point position)
@@ -37,3 +38,23 @@
                                   '|TextDocumentIdentifier|
                                   :|uri| (buffer-filename (point-buffer point)))
                  :|position| (make-lsp-position point)))
+
+(defun file-location (file offset)
+  (with-open-file (in file)
+    (loop :for string := (read-line in)
+          :for line :from 0
+          :do (if (>= offset (length string))
+                  (decf offset (length string))
+                  (return (make-instance
+                           '|Location|
+                           :|uri| (format nil "file://~A" file)
+                           :|range| (make-instance
+                                     '|Range|
+                                     :|start| (make-instance
+                                               '|Position|
+                                               :|line| line
+                                               :|character| 0)
+                                     :|end| (make-instance
+                                             '|Position|
+                                             :|line| line
+                                             :|character| (length string)))))))))
