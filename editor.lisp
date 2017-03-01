@@ -42,9 +42,10 @@
 (defun file-location (file offset)
   (with-open-file (in file)
     (loop :for string := (read-line in)
+          :for length := (1+ (length string))
           :for line :from 0
-          :do (if (>= offset (length string))
-                  (decf offset (length string))
+          :do (if (>= offset length)
+                  (decf offset length)
                   (return (make-instance
                            '|Location|
                            :|uri| (format nil "file://~A" file)
