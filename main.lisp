@@ -59,10 +59,6 @@
     (when (equal uri (document-uri document))
       (return document))))
 
-(defun buffer-package-name (buffer)
-  (declare (ignore buffer))
-  "CL-USER")
-
 (defun call-with-text-document-position (text-document-position-params function)
   (let* ((position (slot-value text-document-position-params '|position|))
          (uri (slot-value (slot-value text-document-position-params '|textDocument|) '|uri|)))
@@ -83,6 +79,23 @@
   `(let ((swank::*buffer-package* ,package)
          (swank::*buffer-readtable* ,readtable))
      ,@body))
+
+(defun search-buffer-package (point)
+  (lem-base:with-point ((p point))
+    (lem-base:line-start p)
+    (or (loop
+          (when (lem-base:looking-at p "^\\s*\\(in-package\\s")
+            (return (and (lem-base:scan-lists p 1 -1 t)
+                         (lem-base:form-offset p 1)
+                         (lem-base:skip-whitespace-forward p)
+                         (lem-base:with-point ((start p))
+                           (when (lem-base:form-offset p 1)
+                             (ignore-errors
+                              (find-package
+                               (read-from-string (lem-base:points-to-string start p)))))))))
+          (unless (lem-base:line-offset p -1)
+            (return)))
+        (find-package "CL-USER"))))
 
 (defvar *initialize-params* nil)
 (defvar *swank-fuzzy-completions* nil)
@@ -249,7 +262,7 @@
              (with-swank ()
                (funcall *swank-fuzzy-completions*
                         (lem-base:points-to-string start end)
-                        (buffer-package-name (lem-base:point-buffer point))))))
+                        (search-buffer-package point)))))
         (when result
           (destructuring-bind (completions timeout) result
             (declare (ignore timeout))
@@ -283,7 +296,7 @@
     (let* ((symbol-string (lem-base:symbol-string-at-point point))
            (describe-string
             (ignore-errors
-             (with-swank ()
+             (with-swank (:package (search-buffer-package point))
                (swank:describe-symbol symbol-string)))))
       (convert-to-hash-table
        (if describe-string
@@ -363,8 +376,7 @@
   (let ((symbol-string (lem-base:symbol-string-at-point point)))
     (when symbol-string
       (swank:operator-arglist symbol-string
-                              (buffer-package-name
-                               (lem-base:point-buffer point))))))
+                              (search-buffer-package point)))))
 
 (define-method "textDocument/signatureHelp" (params)
   (with-text-document-position (point)
@@ -378,8 +390,8 @@
                                '|SignatureInformation|
                                :|label| arglist))))))))
 
-(defun find-definitions (name buffer)
-  (with-swank (:package (find-package (buffer-package-name buffer)))
+(defun find-definitions (point name)
+  (with-swank (:package (search-buffer-package point))
     (swank:find-definitions-for-emacs name)))
 
 (define-method "textDocument/definition" (params)
@@ -387,7 +399,7 @@
       (convert-from-hash-table '|TextDocumentPositionParams| params)
     (alexandria:when-let ((name (lem-base:symbol-string-at-point point)))
       (let ((locations '()))
-        (dolist (def (find-definitions name (lem-base:point-buffer point)))
+        (dolist (def (find-definitions point name))
           (optima:match def
             ((list _
                    (list :location
@@ -405,8 +417,9 @@
     (let ((symbol-string (lem-base:symbol-string-at-point point))
           (locations '()))
       (loop :for (type . definitions)
-            :in (swank:xrefs '(:calls :macroexpands :binds :references :sets :specializes)
-                             symbol-string)
+            :in (with-swank (:package (search-buffer-package point))
+                  (swank:xrefs '(:calls :macroexpands :binds :references :sets :specializes)
+                               symbol-string))
             :do (loop :for def :in definitions
                       :do (optima:match def
                             ((list _
