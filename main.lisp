@@ -4,6 +4,7 @@
         :cl-lsp/editor
         :cl-lsp/lisp-syntax
         :cl-lsp/logger)
+  (:import-from :quri)
   (:import-from :jsonrpc)
   (:import-from :yason)
   (:import-from :uiop)
@@ -66,7 +67,7 @@
   (let* ((position (slot-value text-document-position-params '|position|))
          (uri (slot-value (slot-value text-document-position-params '|textDocument|) '|uri|)))
     (multiple-value-bind (buffer)
-        (lem-base:find-file-buffer (subseq uri (length "file://")))
+        (lem-base:find-file-buffer (quri:uri-path (quri:uri uri)))
       (setf (lem-base:buffer-syntax-table buffer) *syntax-table*)
       (let ((point (lem-base:buffer-point buffer)))
         (move-to-lsp-position point position)
