@@ -3,7 +3,8 @@
   (:import-from :trivial-types)
   (:import-from :closer-mop)
   (:export :convert-from-hash-table
-           :convert-to-hash-table))
+           :convert-to-hash-table
+           :list-to-object[]))
 (in-package :cl-lsp/protocol)
 
 (defvar *protocol-symbols* '())
@@ -355,3 +356,8 @@
                   (t
                    value))))
     hash-table))
+
+(defun list-to-object[] (list)
+  (cond ((null list) (vector))
+        ((null (cdr list)) (first list))
+        (t list)))

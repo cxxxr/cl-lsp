@@ -396,11 +396,7 @@
              (push (convert-to-hash-table
                     (file-location file offset))
                    locations))))
-        (if (alexandria:length= locations 1)
-            (first locations)
-            (if (null locations)
-                (vector)
-                locations))))))
+        (list-to-object[] locations)))))
 
 (define-method "textDocument/references" (params)
   (with-text-document-position (point)
@@ -418,7 +414,7 @@
                                          (list :position offset)
                                          (list :snippet _)))
                              (push (file-location file offset) locations)))))
-      locations)))
+      (list-to-object[] locations))))
 
 (define-method "textDocument/codeLens" (params)
   #+(or)
