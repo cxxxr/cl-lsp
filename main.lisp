@@ -428,7 +428,7 @@
                                          (list :file file)
                                          (list :position offset)
                                          (list :snippet _)))
-                             (push (file-location file offset) locations)))))
+                             (push (convert-to-hash-table (file-location file offset)) locations)))))
       (list-to-object[] locations))))
 
 (define-method "textDocument/codeLens" (params)
