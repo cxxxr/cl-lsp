@@ -3,7 +3,8 @@
         :cl-lsp/protocol
         :cl-lsp/editor
         :cl-lsp/lisp-syntax
-        :cl-lsp/logger)
+        :cl-lsp/logger
+        :cl-lsp/slime)
   (:import-from :quri)
   (:import-from :jsonrpc)
   (:import-from :yason)
@@ -337,18 +338,6 @@
                (lem-base:skip-chars-forward point #'lem-base:syntax-symbol-char-p)))
         (autodoc-parse-context-1 point suffix))))
   )
-
-(defun beginning-of-defun-point (point &optional limit-lines)
-  (lem-base:with-point ((p point))
-    (lem-base:line-start p)
-    (loop
-      (when (char= #\( (lem-base:character-at p))
-        (return p))
-      (unless (lem-base:line-offset p -1)
-        (return (lem-base::line-start p)))
-      (when limit-lines
-        (when (>= 0 (decf limit-lines))
-          (return p))))))
 
 (defun parse-arglist-string (string)
   (labels ((f (start)
