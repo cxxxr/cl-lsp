@@ -1,9 +1,16 @@
 (defpackage :cl-lsp/slime
   (:use :cl
         :lem-base)
-  (:export :beginning-of-defun-point
+  (:import-from :cl-ppcre)
+  (:export :symbol-string-at-point*
+           :beginning-of-defun-point
            :search-local-definition))
 (in-package :cl-lsp/slime)
+
+(defun symbol-string-at-point* (point)
+  (let ((string (lem-base:symbol-string-at-point point)))
+    (when string
+      (values (ppcre:regex-replace "^#\\." string "")))))
 
 (defun beginning-of-defun-point (point &optional limit-lines)
   (lem-base:with-point ((p point))

@@ -5,6 +5,7 @@
         :cl-lsp/lisp-syntax
         :cl-lsp/logger
         :cl-lsp/slime)
+  (:import-from :cl-ppcre)
   (:import-from :quri)
   (:import-from :jsonrpc)
   (:import-from :yason)
@@ -294,23 +295,22 @@
 (define-method "textDocument/hover" (params)
   (with-text-document-position (point)
       (convert-from-hash-table '|TextDocumentPositionParams| params)
-    (let ((symbol-string (lem-base:symbol-string-at-point point)))
-      (setf symbol-string (ppcre:regex-replace "^#['.]" symbol-string ""))
-      (let ((describe-string
-             (ignore-errors
-              (with-swank (:package (search-buffer-package point))
-                (swank:describe-symbol symbol-string)))))
-        (convert-to-hash-table
-         (if describe-string
-             (lem-base:with-point ((start point)
-                                   (end point))
-               (lem-base:skip-chars-backward start #'lem-base:syntax-symbol-char-p)
-               (lem-base:skip-chars-forward end #'lem-base:syntax-symbol-char-p)
-               (make-instance '|Hover|
-                              :|contents| describe-string
-                              :|range| (make-lsp-range start end)))
+    (let* ((symbol-string (symbol-string-at-point* point))
+           (describe-string
+            (ignore-errors
+             (with-swank (:package (search-buffer-package point))
+               (swank:describe-symbol symbol-string)))))
+      (convert-to-hash-table
+       (if describe-string
+           (lem-base:with-point ((start point)
+                                 (end point))
+             (lem-base:skip-chars-backward start #'lem-base:syntax-symbol-char-p)
+             (lem-base:skip-chars-forward end #'lem-base:syntax-symbol-char-p)
              (make-instance '|Hover|
-                            :|contents| "")))))))
+                            :|contents| describe-string
+                            :|range| (make-lsp-range start end)))
+           (make-instance '|Hover|
+                          :|contents| ""))))))
 
 #+(or)
 (progn
@@ -363,7 +363,7 @@
         :do (when (lem-base:point< point start)
               (return-from arglist nil)))
   (lem-base:skip-whitespace-forward point)
-  (let ((symbol-string (lem-base:symbol-string-at-point point)))
+  (let ((symbol-string (symbol-string-at-point* point)))
     (when symbol-string
       (swank:operator-arglist symbol-string
                               (search-buffer-package point)))))
@@ -402,13 +402,13 @@
 (define-method "textDocument/definition" (params)
   (with-text-document-position (point)
       (convert-from-hash-table '|TextDocumentPositionParams| params)
-    (alexandria:when-let ((name (lem-base:symbol-string-at-point point)))
+    (alexandria:when-let ((name (symbol-string-at-point* point)))
       (find-definitions point name))))
 
 (define-method "textDocument/references" (params)
   (with-text-document-position (point)
       (convert-from-hash-table '|ReferenceParams| params)
-    (let ((symbol-string (lem-base:symbol-string-at-point point))
+    (let ((symbol-string (symbol-string-at-point* point))
           (locations '()))
       (loop :for (type . definitions)
             :in (with-swank (:package (search-buffer-package point))
