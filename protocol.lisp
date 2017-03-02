@@ -286,6 +286,14 @@
 (define-interface |ReferenceContext| ()
   (|includeDeclaration| :type boolean))
 
+(define-interface |DocumentHighlight| ()
+  (|range| :type |Range|)
+  (|kind| :optional t :type number))
+
+(defparameter |DocumentHighlightKind.Text| 1)
+(defparameter |DocumentHighlightKind.Read| 2)
+(defparameter |DocumentHighlightKind.Write| 3)
+
 (define-interface |CodeLensParams| ()
   (|textDocument| :type |TextDocumentIdentifier|))
 

@@ -146,7 +146,7 @@
                                                :|triggerCharacters| (list " "))
                      :|definitionProvider| t
                      :|referencesProvider| t
-                     :|documentHighlightProvider| nil
+                     :|documentHighlightProvider| t
                      :|documentSymbolProvider| nil
                      :|workspaceSymbolProvider| nil
                      :|codeActionProvider| nil
@@ -423,6 +423,36 @@
                                          (list :snippet _)))
                              (push (convert-to-hash-table (file-location file offset)) locations)))))
       (list-to-object[] locations))))
+
+(define-method "textDocument/documentHighlight" (params)
+  (with-text-document-position (point)
+      (convert-from-hash-table '|TextDocumentPositionParams| params)
+    (alexandria:when-let*
+        ((string (symbol-string-at-point* point))
+         (name (ignore-errors
+                (symbol-name
+                 (let ((*package* (search-buffer-package point)))
+                   (read-from-string string))))))
+      (let ((regex (ppcre:create-scanner `(:sequence
+                                           (:alternation
+                                            (:positive-lookbehind (:char-class #\( #\) #\space #\tab #\:))
+                                            :start-anchor)
+                                           ,name
+                                           (:alternation
+                                            (:positive-lookahead (:char-class #\( #\) #\space #\tab #\:))
+                                            :end-anchor))
+                                         :case-insensitive-mode t)))
+        (lem-base:buffer-start point)
+        (let ((response
+               (loop :while (lem-base:search-forward-regexp point regex)
+                     :collect (lem-base:with-point ((start point))
+                                (lem-base:character-offset start (- (length name)))
+                                (convert-to-hash-table
+                                 (make-instance '|DocumentHighlight|
+                                                :|range| (make-lsp-range start point)))))))
+          (if (null response)
+              (vector)
+              response))))))
 
 (define-method "textDocument/codeLens" (params)
   #+(or)
