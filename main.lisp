@@ -381,25 +381,29 @@
                                :|label| arglist))))))))
 
 (defun find-definitions (point name)
+  (alexandria:when-let ((p (search-local-definition point name)))
+    (return-from find-definitions
+      (convert-to-hash-table
+       (file-location (lem-base:buffer-filename (lem-base:point-buffer point))
+                      (lem-base:position-at-point p)))))
   (with-swank (:package (search-buffer-package point))
-    (swank:find-definitions-for-emacs name)))
+    (let ((locations '()))
+      (dolist (def (swank:find-definitions-for-emacs name))
+        (optima:match def
+          ((list _
+                 (list :location
+                       (list :file file)
+                       (list :position offset)
+                       (list :snippet _)))
+           (push (convert-to-hash-table (file-location file offset))
+                 locations))))
+      (list-to-object[] locations))))
 
 (define-method "textDocument/definition" (params)
   (with-text-document-position (point)
       (convert-from-hash-table '|TextDocumentPositionParams| params)
     (alexandria:when-let ((name (lem-base:symbol-string-at-point point)))
-      (let ((locations '()))
-        (dolist (def (find-definitions point name))
-          (optima:match def
-            ((list _
-                   (list :location
-                         (list :file file)
-                         (list :position offset)
-                         (list :snippet _)))
-             (push (convert-to-hash-table
-                    (file-location file offset))
-                   locations))))
-        (list-to-object[] locations)))))
+      (find-definitions point name))))
 
 (define-method "textDocument/references" (params)
   (with-text-document-position (point)
