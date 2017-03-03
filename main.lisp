@@ -20,11 +20,21 @@
 
 (defvar *server* (jsonrpc:make-server))
 
-(defun method-log (name params)
+(defun request-log (name params)
+  (log-format "~%* from client~%")
   (log-format "name: ~A~%" name)
   (log-format "params: ~A~%"
               (with-output-to-string (stream)
                 (yason:encode params stream))))
+
+(defun response-log (hash)
+  (log-format "~%* to server~%~A~%"
+              (let ((string (with-output-to-string (out)
+                              (yason:encode hash out))))
+                (if (< 80 (length string))
+                    (format nil "~A ..." (subseq string 0 80))
+                    string)))
+  hash)
 
 (defun call-with-error-handle (function)
   (handler-bind ((error (lambda (c)
@@ -43,11 +53,12 @@
                             (lambda (,params)
                               (declare (ignorable ,params))
                               (with-error-handle
-                                (method-log ',name ,params)
-                                ,(if (string= name "initialize")
-                                     `(progn ,@body)
-                                     `(or (check-initialized)
-                                          (progn ,@body)))))))
+                                (request-log ',name ,params)
+                                (response-log
+                                 ,(if (string= name "initialize")
+                                      `(progn ,@body)
+                                      `(or (check-initialized)
+                                           (progn ,@body))))))))
 
 (defvar *documents* '())
 (defstruct document
