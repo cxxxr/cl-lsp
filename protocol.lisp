@@ -9,11 +9,17 @@
 
 (defvar *protocol-symbols* '())
 
+(defclass protocol () ())
+
+(defvar *null* (make-symbol "NULL"))
+
 (defmacro define-interface (name parent &body slots)
   `(progn
      (push ',name *protocol-symbols*)
      (export ',(cons name (mapcar #'first slots)))
-     (defclass ,name ,parent
+     (defclass ,name ,(if (null parent)
+                          `(protocol)
+                          parent)
        ,(mapcar (lambda (slot)
                   (let ((slot-symbol (first slot))
                         (type (getf (rest slot) :type))
@@ -24,7 +30,7 @@
                       ,@(if type
                             `(:type ,type))
                       ,@(if optional
-                            `(:initform nil))
+                            `(:initform *null*))
                       ,@(if documentation
                             `(:documentation ,documentation)))))
                 slots))))
@@ -353,16 +359,19 @@
           :for type := (c2mop:slot-definition-type slot)
           :for value := (slot-value instance name)
           :do
-          (setf (gethash (string name) hash-table)
-                (cond
-                  ((protocol-symbol-p type)
-                   (convert-to-hash-table value))
-                  ((protocol-list-p type)
-                   (mapcar #'convert-to-hash-table value))
-                  ((and (consp type) (eq 'or (car type)))
-                   (convert-to-hash-table value))
-                  (t
-                   value))))
+          (unless (eq value *null*)
+            (setf (gethash (string name) hash-table)
+                  (cond
+                    ((protocol-symbol-p type)
+                     (convert-to-hash-table value))
+                    ((and (protocol-list-p type) (listp value))
+                     (mapcar #'convert-to-hash-table value))
+                    ((and (consp type)
+                          (eq 'or (car type))
+                          (typep value 'protocol))
+                     (convert-to-hash-table value))
+                    (t
+                     value)))))
     hash-table))
 
 (defun list-to-object[] (list)
