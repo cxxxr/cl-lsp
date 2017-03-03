@@ -136,14 +136,16 @@
     '|InitializeResult|
     :|capabilities| (make-instance
                      '|ServerCapabilities|
-                     :|textDocumentSync| (make-instance
-                                          '|TextDocumentSyncOptions|
-                                          :|openClose| t
-                                          :|change| |TextDocumentSyncKind.Incremental|
-                                          ;:|willSave| nil
-                                          ;:|willSaveWaitUntil| nil
-                                          ;:|save| ...
-                                          )
+                     :|textDocumentSync| (progn
+                                           #+(or)
+                                           (make-instance
+                                            '|TextDocumentSyncOptions|
+                                            :|openClose| t
+                                            :|change| |TextDocumentSyncKind.Incremental|
+                                            :|willSave| 'yason:false
+                                            :|willSaveWaitUntil| 'yason:false
+                                            :|save| (make-instance '|SaveOptions| :|includeText| t))
+                                           |TextDocumentSyncKind.Incremental|)
                      :|hoverProvider| t
                      :|completionProvider| (make-instance
                                             '|CompletionOptions|
