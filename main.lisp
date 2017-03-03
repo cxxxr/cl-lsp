@@ -254,8 +254,9 @@
           (find-document uri))
          (buffer
           (document-buffer document)))
-    (lem-base:erase-buffer buffer)
-    (lem-base:insert-string (lem-base:buffer-point buffer) text))
+    (when text
+      (lem-base:erase-buffer buffer)
+      (lem-base:insert-string (lem-base:buffer-point buffer) text)))
   (values))
 
 (define-method "textDocument/didClose" (params)
