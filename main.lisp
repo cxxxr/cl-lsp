@@ -60,25 +60,12 @@
                                       `(or (check-initialized)
                                            (progn ,@body))))))))
 
-(defvar *documents* '())
-(defstruct document
-  buffer
-  uri
-  languageId
-  version)
-
-(defun find-document (uri)
-  (dolist (document *documents*)
-    (when (equal uri (document-uri document))
-      (return document))))
-
 (defun call-with-text-document-position (text-document-position-params function)
   (let* ((position (slot-value text-document-position-params '|position|))
          (uri (slot-value (slot-value text-document-position-params '|textDocument|) '|uri|))
-         (document (find-document uri)))
-    (if document
-        (let* ((buffer (document-buffer document))
-               (point (lem-base:buffer-point buffer)))
+         (buffer (lem-base:get-buffer uri)))
+    (if buffer
+        (let ((point (lem-base:buffer-point buffer)))
           (setf (lem-base:buffer-syntax-table buffer) *syntax-table*)
           (move-to-lsp-position point position)
           (funcall function point))
@@ -203,11 +190,9 @@
       (let ((buffer (lem-base:make-buffer |uri|)))
         (setf (lem-base:buffer-syntax-table buffer) *syntax-table*)
         (lem-base:insert-string (lem-base:buffer-point buffer) |text|)
-        (push (make-document :buffer buffer
-                             :uri |uri|
-                             :languageId |languageId|
-                             :version |version|)
-              *documents*))))
+        (setf (lem-base:buffer-value buffer 'document)
+              (list :languageId |languageId|
+                    :version |version|)))))
   (values))
 
 (define-method "textDocument/didChange" (params)
@@ -220,8 +205,7 @@
          (content-changes
           (slot-value did-change-text-document-params
                       '|contentChanges|)))
-    (let* ((document (find-document (slot-value text-document '|uri|)))
-           (buffer (document-buffer document))
+    (let* ((buffer (lem-base:get-buffer (slot-value text-document '|uri|)))
            (point (lem-base:buffer-point buffer)))
       (dolist (content-change content-changes)
         (with-slots (|range| |rangeLength| |text|)
@@ -250,10 +234,8 @@
           (slot-value did-save-text-document-params '|textDocument|))
          (uri
           (slot-value text-document '|uri|))
-         (document
-          (find-document uri))
          (buffer
-          (document-buffer document)))
+          (lem-base:get-buffer uri)))
     (when text
       (lem-base:erase-buffer buffer)
       (lem-base:insert-string (lem-base:buffer-point buffer) text)))
@@ -268,10 +250,9 @@
                       '|textDocument|))
          (uri
           (slot-value text-document '|uri|))
-         (document
-          (find-document uri)))
-    (lem-base:delete-buffer (document-buffer document))
-    (setf *documents* (delete uri *documents* :key #'document-uri :test #'equal)))
+         (buffer
+          (lem-base:get-buffer uri)))
+    (lem-base:delete-buffer buffer))
   (values))
 
 (define-method "textDocument/completion" (params)
