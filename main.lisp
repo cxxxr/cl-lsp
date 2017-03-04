@@ -456,30 +456,10 @@
               response))))))
 
 (define-method "textDocument/codeLens" (params)
-  #+(or)
-  (let* ((code-lens-params
-          (convert-from-hash-table '|CodeLensParams| params))
-         (text-document (slot-value code-lens-params '|textDocument|))
-         (uri (slot-value text-document '|uri|)))
-    (declare (ignore uri)))
   (vector))
 
 (define-method "textDocument/documentLink" (params)
-  (let* ((document-link-params
-          (convert-from-hash-table '|DocumentLinkParams| params))
-         (text-document
-          (slot-value document-link-params '|textDocument|))
-         (uri
-          (slot-value text-document '|uri|)))
-    (declare (ignore uri))
-    (list (convert-to-hash-table
-           (make-instance
-            '|DocumentLink|
-            :|range| (make-instance
-                      '|Range|
-                      :|start| (make-instance '|Position| :|line| 0 :|character| 0)
-                      :|end| (make-instance '|Position| :|line| 0 :|character| 0))
-            :|target| nil)))))
+  (vector))
 
 (defun run-tcp-mode (&key (port 10003))
   (with-logger-stream (*error-output*)
