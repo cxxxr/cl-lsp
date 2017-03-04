@@ -63,14 +63,16 @@
 (defun call-with-text-document-position (text-document-position-params function)
   (let* ((position (slot-value text-document-position-params '|position|))
          (uri (slot-value (slot-value text-document-position-params '|textDocument|) '|uri|))
-         (buffer (lem-base:get-buffer uri)))
+         (buffer (lem-base:get-buffer uri))
+         (file (quri:uri-path (quri:uri uri))))
     (if buffer
         (let ((point (lem-base:buffer-point buffer)))
           (setf (lem-base:buffer-syntax-table buffer) *syntax-table*)
+          (setf (lem-base:buffer-filename buffer) file)
           (move-to-lsp-position point position)
           (funcall function point))
         (multiple-value-bind (buffer)
-            (lem-base:find-file-buffer (quri:uri-path (quri:uri uri)))
+            (lem-base:find-file-buffer file)
           (setf (lem-base:buffer-syntax-table buffer) *syntax-table*)
           (let ((point (lem-base:buffer-point buffer)))
             (move-to-lsp-position point position)
@@ -384,10 +386,7 @@
 
 (defun find-definitions (point name)
   (alexandria:when-let ((p (search-local-definition point name)))
-    (return-from find-definitions
-      (convert-to-hash-table
-       (file-location (lem-base:buffer-filename (lem-base:point-buffer point))
-                      (lem-base:position-at-point p)))))
+    (return-from find-definitions (convert-to-hash-table (buffer-location p))))
   (with-swank (:package (search-buffer-package point))
     (let ((locations '()))
       (dolist (def (swank:find-definitions-for-emacs name))

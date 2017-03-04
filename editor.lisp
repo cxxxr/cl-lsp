@@ -6,7 +6,9 @@
            :make-lsp-position
            :make-lsp-range
            :make-text-document-position
-           :file-location))
+           :file-location
+           :buffer-location
+           :map-buffer-symbols))
 (in-package :cl-lsp/editor)
 
 (defun move-to-lsp-position (point position)
@@ -39,6 +41,21 @@
                                   :|uri| (buffer-filename (point-buffer point)))
                  :|position| (make-lsp-position point)))
 
+(defun line-location (file line start-charpos end-charpos)
+  (make-instance
+   '|Location|
+   :|uri| (format nil "file://~A" file)
+   :|range| (make-instance
+             '|Range|
+             :|start| (make-instance
+                       '|Position|
+                       :|line| line
+                       :|character| start-charpos)
+             :|end| (make-instance
+                     '|Position|
+                     :|line| line
+                     :|character| end-charpos))))
+
 (defun file-location (file offset)
   (with-open-file (in file)
     (loop :for string := (read-line in)
@@ -46,16 +63,14 @@
           :for line :from 0
           :do (if (>= offset length)
                   (decf offset length)
-                  (return (make-instance
-                           '|Location|
-                           :|uri| (format nil "file://~A" file)
-                           :|range| (make-instance
-                                     '|Range|
-                                     :|start| (make-instance
-                                               '|Position|
-                                               :|line| line
-                                               :|character| 0)
-                                     :|end| (make-instance
-                                             '|Position|
-                                             :|line| line
-                                             :|character| (length string)))))))))
+                  (return (line-location file line 0 (length string)))))))
+
+(defun buffer-location (point)
+  (let ((line (1- (line-number-at-point point))))
+    (line-location (buffer-filename (point-buffer point))
+                   line
+                   (point-charpos point)
+                   (with-point ((p point))
+                     (if (form-offset p 1)
+                         (point-charpos p)
+                         (length (line-string point)))))))
