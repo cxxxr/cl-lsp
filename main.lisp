@@ -91,19 +91,17 @@
 
 (defun search-buffer-package (point)
   (lem-base:with-point ((p point))
-    (lem-base:line-start p)
-    (or (loop
-          (when (lem-base:looking-at p "^\\s*\\(in-package\\s")
-            (return (and (lem-base:scan-lists p 1 -1 t)
-                         (lem-base:form-offset p 1)
-                         (lem-base:skip-whitespace-forward p)
-                         (lem-base:with-point ((start p))
-                           (when (lem-base:form-offset p 1)
-                             (ignore-errors
-                              (find-package
-                               (read-from-string (lem-base:points-to-string start p)))))))))
-          (unless (lem-base:line-offset p -1)
-            (return)))
+    (lem-base:buffer-start p)
+    (or (loop :while (lem-base:search-forward-regexp p "^\\s*\\(in-package\\s")
+              :do (lem-base:with-point ((start p))
+                    (when (lem-base:form-offset p 1)
+                      (handler-case (let ((name (symbol-name
+                                                 (read-from-string
+                                                  (lem-base:points-to-string start p)))))
+                                      (unless (equal name "CL-USER")
+                                        (return (find-package name))))
+                        (error ()
+                          (find-package "CL-USER"))))))
         (find-package "CL-USER"))))
 
 (defvar *initialize-params* nil)
@@ -156,7 +154,7 @@
                      :|definitionProvider| t
                      :|referencesProvider| t
                      :|documentHighlightProvider| t
-                     :|documentSymbolProvider| nil
+                     :|documentSymbolProvider| t
                      :|workspaceSymbolProvider| nil
                      :|codeActionProvider| nil
                      :|codeLensProvider| nil
@@ -455,6 +453,45 @@
           (if (null response)
               (vector)
               response))))))
+
+(defun document-symbol (buffer)
+  (let ((buffer-file (lem-base:buffer-filename buffer))
+        (symbol-informations '())
+        (used (make-hash-table :test 'equal)))
+    (map-buffer-symbols
+     buffer
+     (lambda (point symbol-string)
+       (unless (gethash symbol-string used)
+         (setf (gethash symbol-string used) t)
+         (with-swank (:package (search-buffer-package point))
+           (dolist (def (swank:find-definitions-for-emacs symbol-string))
+             (optima:match def
+               ((list _
+                      (list :location
+                            (list :file file)
+                            (list :position offset)
+                            (list :snippet _)))
+                (when (equal buffer-file file)
+                  (push (convert-to-hash-table
+                         (make-instance '|SymbolInformation|
+                                        :|name| symbol-string
+                                        :|kind| |SymbolKind.Function| ; XXX: Not the correct kind
+                                        :|location| (file-location file offset)))
+                        symbol-informations)))))))))
+    (if (null symbol-informations)
+        (vector)
+        symbol-informations)))
+
+(define-method "textDocument/documentSymbol" (params)
+  (let* ((document-symbol-params (convert-from-hash-table '|DocumentSymbolParams| params))
+         (text-document (slot-value document-symbol-params '|textDocument|))
+         (uri (slot-value text-document '|uri|))
+         (buffer (lem-base:get-buffer uri)))
+    (if buffer
+        (document-symbol buffer)
+        (let ((buffer (lem-base:find-file-buffer (quri:uri-path (quri:uri uri)))))
+          (unwind-protect (document-symbol buffer)
+            (lem-base:delete-buffer buffer))))))
 
 (define-method "textDocument/codeLens" (params)
   (vector))

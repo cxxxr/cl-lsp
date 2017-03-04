@@ -300,6 +300,53 @@
 (defparameter |DocumentHighlightKind.Read| 2)
 (defparameter |DocumentHighlightKind.Write| 3)
 
+(define-interface |DocumentSymbolParams| ()
+  (|textDocument| :type |TextDocumentIdentifier|))
+
+(define-interface |SymbolInformation| ()
+  (|name| :type string)
+  (|kind| :type number)
+  (|location| :type |Location|)
+  (|containerName| :optional t :type string))
+
+(export '(|SymbolKind.File|
+          |SymbolKind.Module|
+          |SymbolKind.Namespace|
+          |SymbolKind.Package|
+          |SymbolKind.Class|
+          |SymbolKind.Method|
+          |SymbolKind.Property|
+          |SymbolKind.Field|
+          |SymbolKind.Constructor|
+          |SymbolKind.Enum|
+          |SymbolKind.Interface|
+          |SymbolKind.Function|
+          |SymbolKind.Variable|
+          |SymbolKind.Constant|
+          |SymbolKind.String|
+          |SymbolKind.Number|
+          |SymbolKind.Boolean|
+          |SymbolKind.Array|))
+
+(defparameter |SymbolKind.File| 1)
+(defparameter |SymbolKind.Module| 2)
+(defparameter |SymbolKind.Namespace| 3)
+(defparameter |SymbolKind.Package| 4)
+(defparameter |SymbolKind.Class| 5)
+(defparameter |SymbolKind.Method| 6)
+(defparameter |SymbolKind.Property| 7)
+(defparameter |SymbolKind.Field| 8)
+(defparameter |SymbolKind.Constructor| 9)
+(defparameter |SymbolKind.Enum| 10)
+(defparameter |SymbolKind.Interface| 11)
+(defparameter |SymbolKind.Function| 12)
+(defparameter |SymbolKind.Variable| 13)
+(defparameter |SymbolKind.Constant| 14)
+(defparameter |SymbolKind.String| 15)
+(defparameter |SymbolKind.Number| 16)
+(defparameter |SymbolKind.Boolean| 17)
+(defparameter |SymbolKind.Array| 18)
+
 (define-interface |CodeLensParams| ()
   (|textDocument| :type |TextDocumentIdentifier|))
 

@@ -74,3 +74,24 @@
                      (if (form-offset p 1)
                          (point-charpos p)
                          (length (line-string point)))))))
+
+(defun map-buffer-symbols (buffer function)
+  (with-point ((p (buffers-start buffer)))
+    (loop
+      (loop
+        (when (= 0 (skip-chars-forward p
+                                       (lambda (c)
+                                         (or (member c '(#\, #\' #\`))
+                                             (syntax-symbol-char-p c)))
+                                       t))
+          (return-from map-buffer-symbols))
+        (alexandria:if-let ((str (looking-at p ",@|,|'|`|#\\.")))
+          (character-offset p (length str))
+          (return)))
+      (cond
+        ((maybe-beginning-of-string-or-comment p)
+         (unless (form-offset p 1) (return)))
+        (t
+         (with-point ((start p))
+           (form-offset p 1)
+           (funcall function p (points-to-string start p))))))))
