@@ -191,6 +191,7 @@
         text-document
       (let ((buffer (lem-base:make-buffer |uri|)))
         (setf (lem-base:buffer-syntax-table buffer) *syntax-table*)
+        (setf (lem-base:buffer-filename buffer) (quri:uri-path (quri:uri |uri|)))
         (lem-base:insert-string (lem-base:buffer-point buffer) |text|)
         (setf (lem-base:buffer-value buffer 'document)
               (list :languageId |languageId|
