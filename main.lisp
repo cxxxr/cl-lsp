@@ -148,7 +148,7 @@
                      :|hoverProvider| t
                      :|completionProvider| (make-instance
                                             '|CompletionOptions|
-                                            :|resolveProvider| t
+                                            :|resolveProvider| nil
                                             :|triggerCharacters| (loop :for code
                                                                        :from (char-code #\a)
                                                                        :below (char-code #\z)
