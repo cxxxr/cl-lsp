@@ -3,16 +3,14 @@
   (:import-from :trivial-types)
   (:import-from :closer-mop)
   (:export :convert-from-hash-table
-           :convert-to-hash-table
-           :list-to-object-or-object[]
-           :list-to-object[]))
+           :convert-to-hash-table))
 (in-package :cl-lsp/protocol)
+
+(defvar null-slot-value (make-symbol "NULL"))
 
 (defvar *protocol-symbols* '())
 
 (defclass protocol () ())
-
-(defvar *null* (make-symbol "NULL"))
 
 (defmacro define-interface (name parent &body slots)
   `(progn
@@ -31,7 +29,7 @@
                       ,@(if type
                             `(:type ,type))
                       ,@(if optional
-                            `(:initform *null*))
+                            `(:initform null-slot-value))
                       ,@(if documentation
                             `(:documentation ,documentation)))))
                 slots))))
@@ -137,13 +135,9 @@
 (define-interface |InitializeError| ()
   (|retry| :type boolean))
 
-(export '(|TextDocumentSyncKind.None|
-          |TextDocumentSyncKind.Full|
-          |TextDocumentSyncKind.Incremental|))
-
-(defparameter |TextDocumentSyncKind.None| 0)
-(defparameter |TextDocumentSyncKind.Full| 1)
-(defparameter |TextDocumentSyncKind.Incremental| 2)
+(export (defparameter |TextDocumentSyncKind.None| 0))
+(export (defparameter |TextDocumentSyncKind.Full| 1))
+(export (defparameter |TextDocumentSyncKind.Incremental| 2))
 
 (define-interface |CompletionOptions| ()
   (|resolveProvider| :optional t :type boolean)
@@ -297,9 +291,9 @@
   (|range| :type |Range|)
   (|kind| :optional t :type number))
 
-(defparameter |DocumentHighlightKind.Text| 1)
-(defparameter |DocumentHighlightKind.Read| 2)
-(defparameter |DocumentHighlightKind.Write| 3)
+(export (defparameter |DocumentHighlightKind.Text| 1))
+(export (defparameter |DocumentHighlightKind.Read| 2))
+(export (defparameter |DocumentHighlightKind.Write| 3))
 
 (define-interface |DocumentSymbolParams| ()
   (|textDocument| :type |TextDocumentIdentifier|))
@@ -310,43 +304,24 @@
   (|location| :type |Location|)
   (|containerName| :optional t :type string))
 
-(export '(|SymbolKind.File|
-          |SymbolKind.Module|
-          |SymbolKind.Namespace|
-          |SymbolKind.Package|
-          |SymbolKind.Class|
-          |SymbolKind.Method|
-          |SymbolKind.Property|
-          |SymbolKind.Field|
-          |SymbolKind.Constructor|
-          |SymbolKind.Enum|
-          |SymbolKind.Interface|
-          |SymbolKind.Function|
-          |SymbolKind.Variable|
-          |SymbolKind.Constant|
-          |SymbolKind.String|
-          |SymbolKind.Number|
-          |SymbolKind.Boolean|
-          |SymbolKind.Array|))
-
-(defparameter |SymbolKind.File| 1)
-(defparameter |SymbolKind.Module| 2)
-(defparameter |SymbolKind.Namespace| 3)
-(defparameter |SymbolKind.Package| 4)
-(defparameter |SymbolKind.Class| 5)
-(defparameter |SymbolKind.Method| 6)
-(defparameter |SymbolKind.Property| 7)
-(defparameter |SymbolKind.Field| 8)
-(defparameter |SymbolKind.Constructor| 9)
-(defparameter |SymbolKind.Enum| 10)
-(defparameter |SymbolKind.Interface| 11)
-(defparameter |SymbolKind.Function| 12)
-(defparameter |SymbolKind.Variable| 13)
-(defparameter |SymbolKind.Constant| 14)
-(defparameter |SymbolKind.String| 15)
-(defparameter |SymbolKind.Number| 16)
-(defparameter |SymbolKind.Boolean| 17)
-(defparameter |SymbolKind.Array| 18)
+(export (defparameter |SymbolKind.File| 1))
+(export (defparameter |SymbolKind.Module| 2))
+(export (defparameter |SymbolKind.Namespace| 3))
+(export (defparameter |SymbolKind.Package| 4))
+(export (defparameter |SymbolKind.Class| 5))
+(export (defparameter |SymbolKind.Method| 6))
+(export (defparameter |SymbolKind.Property| 7))
+(export (defparameter |SymbolKind.Field| 8))
+(export (defparameter |SymbolKind.Constructor| 9))
+(export (defparameter |SymbolKind.Enum| 10))
+(export (defparameter |SymbolKind.Interface| 11))
+(export (defparameter |SymbolKind.Function| 12))
+(export (defparameter |SymbolKind.Variable| 13))
+(export (defparameter |SymbolKind.Constant| 14))
+(export (defparameter |SymbolKind.String| 15))
+(export (defparameter |SymbolKind.Number| 16))
+(export (defparameter |SymbolKind.Boolean| 17))
+(export (defparameter |SymbolKind.Array| 18))
 
 (define-interface |WorkspaceSymbolParams| ()
   (|query| :type string))
@@ -410,7 +385,7 @@
           :for type := (c2mop:slot-definition-type slot)
           :for value := (slot-value instance name)
           :do
-          (unless (eq value *null*)
+          (unless (eq value null-slot-value)
             (setf (gethash (string name) hash-table)
                   (cond
                     ((protocol-symbol-p type)
@@ -424,12 +399,3 @@
                     (t
                      value)))))
     hash-table))
-
-(defun list-to-object-or-object[] (list)
-  (cond ((null list) (vector))
-        ((null (cdr list)) (first list))
-        (t list)))
-
-(defun list-to-object[] (list)
-  (cond ((null list) (vector))
-        (t list)))

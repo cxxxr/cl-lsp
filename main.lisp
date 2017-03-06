@@ -1,7 +1,7 @@
 (defpackage :cl-lsp/main
   (:use :cl
         :cl-lsp/protocol
-        :cl-lsp/editor
+        :cl-lsp/protocol-util
         :cl-lsp/lisp-syntax
         :cl-lsp/logger
         :cl-lsp/slime)

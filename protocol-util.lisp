@@ -1,12 +1,23 @@
-(defpackage :cl-lsp/editor
+(defpackage :cl-lsp/protocol-util
   (:use :cl
         :lem-base
         :cl-lsp/protocol)
-  (:export :move-to-lsp-position
+  (:export :list-to-object-or-object[]
+           :list-to-object[]
+           :move-to-lsp-position
            :make-lsp-range
            :file-location
            :buffer-location))
-(in-package :cl-lsp/editor)
+(in-package :cl-lsp/protocol-util)
+
+(defun list-to-object-or-object[] (list)
+  (cond ((null list) (vector))
+        ((null (cdr list)) (first list))
+        (t list)))
+
+(defun list-to-object[] (list)
+  (cond ((null list) (vector))
+        (t list)))
 
 (defun move-to-lsp-position (point position)
   (declare (type point point)
