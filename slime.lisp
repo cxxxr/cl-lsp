@@ -5,7 +5,8 @@
   (:export :symbol-string-at-point*
            :beginning-of-defun-point
            :search-local-definition
-           :map-buffer-symbols))
+           :map-buffer-symbols
+           :search-buffer-package))
 (in-package :cl-lsp/slime)
 
 (defun symbol-string-at-point* (point)
@@ -114,3 +115,18 @@
          (with-point ((start p))
            (form-offset p 1)
            (funcall function (points-to-string start p))))))))
+
+(defun search-buffer-package (point)
+  (lem-base:with-point ((p point))
+    (lem-base:buffer-start p)
+    (or (loop :while (lem-base:search-forward-regexp p "^\\s*\\(in-package\\s")
+              :do (lem-base:with-point ((start p))
+                    (when (lem-base:form-offset p 1)
+                      (handler-case (let ((name (symbol-name
+                                                 (read-from-string
+                                                  (lem-base:points-to-string start p)))))
+                                      (unless (equal name "CL-USER")
+                                        (return (find-package name))))
+                        (error ()
+                          (find-package "CL-USER"))))))
+        (find-package "CL-USER"))))
