@@ -81,7 +81,7 @@
           (funcall function point))
         (multiple-value-bind (buffer)
             (lem-base:find-file-buffer (quri:uri-path (quri:uri uri)))
-          (setf (lem-base:buffer-syntax-table buffer) *syntax-table*)
+          (init-buffer buffer uri)
           (let ((point (lem-base:buffer-point buffer)))
             (move-to-lsp-position point position)
             (unwind-protect (funcall function point)
