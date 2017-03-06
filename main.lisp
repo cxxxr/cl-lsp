@@ -20,21 +20,22 @@
 
 (defvar *server* (jsonrpc:make-server))
 
+(defvar *request-log* nil)
+(defvar *response-log* nil)
+
 (defun request-log (name params)
-  (log-format "~%* from client~%")
-  (log-format "name: ~A~%" name)
-  (log-format "params: ~A~%"
-              (with-output-to-string (stream)
-                (yason:encode params stream))))
+  (when *request-log*
+    (log-format "~%* from client~%")
+    (log-format "name: ~A~%" name)
+    (log-format "params: ~A~%"
+                (with-output-to-string (stream)
+                  (yason:encode params stream)))))
 
 (defun response-log (hash)
-  (log-format "~%* to server~%~A~%"
-              (let ((string (with-output-to-string (out)
-                              (yason:encode hash out))))
-                (if (< 80 (length string))
-                    (format nil "~A ..." (subseq string 0 80))
-                    string)))
-  hash)
+  (when *response-log*
+    (log-format "~%* to server~%~A~%"
+                (with-output-to-string (out)
+                  (yason:encode hash out)))))
 
 (defun call-with-error-handle (function)
   (handler-bind ((error (lambda (c)
@@ -48,17 +49,19 @@
   `(call-with-error-handle (lambda () ,@body)))
 
 (defmacro define-method (name (params) &body body)
-  `(jsonrpc:register-method *server*
-                            ,name
-                            (lambda (,params)
-                              (declare (ignorable ,params))
-                              (with-error-handle
-                                (request-log ',name ,params)
-                                (response-log
-                                 ,(if (string= name "initialize")
-                                      `(progn ,@body)
-                                      `(or (check-initialized)
-                                           (progn ,@body))))))))
+  (let ((_val (gensym)))
+    `(jsonrpc:register-method *server*
+                              ,name
+                              (lambda (,params)
+                                (declare (ignorable ,params))
+                                (with-error-handle
+                                  (request-log ',name ,params)
+                                  (let ((,_val ,(if (string= name "initialize")
+                                                    `(progn ,@body)
+                                                    `(or (check-initialized)
+                                                         (progn ,@body)))))
+                                    (response-log ,_val)
+                                    ,_val))))))
 
 (defun init-buffer (buffer uri)
   (setf (lem-base:buffer-filename buffer)
