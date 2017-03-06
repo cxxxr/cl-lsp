@@ -407,7 +407,7 @@
                        (list :snippet _)))
            (push (convert-to-hash-table (file-location file offset))
                  locations))))
-      (list-to-object[] locations))))
+      (list-to-object-or-object[] locations))))
 
 (define-method "textDocument/definition" (params)
   (with-text-document-position (point)
@@ -432,7 +432,7 @@
                                          (list :position offset)
                                          (list :snippet _)))
                              (push (convert-to-hash-table (file-location file offset)) locations)))))
-      (list-to-object[] locations))))
+      (list-to-object-or-object[] locations))))
 
 (define-method "textDocument/documentHighlight" (params)
   (with-text-document-position (point)

@@ -4,6 +4,7 @@
   (:import-from :closer-mop)
   (:export :convert-from-hash-table
            :convert-to-hash-table
+           :list-to-object-or-object[]
            :list-to-object[]))
 (in-package :cl-lsp/protocol)
 
@@ -424,7 +425,11 @@
                      value)))))
     hash-table))
 
-(defun list-to-object[] (list)
+(defun list-to-object-or-object[] (list)
   (cond ((null list) (vector))
         ((null (cdr list)) (first list))
+        (t list)))
+
+(defun list-to-object[] (list)
+  (cond ((null list) (vector))
         (t list)))
