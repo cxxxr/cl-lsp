@@ -347,6 +347,9 @@
 (defparameter |SymbolKind.Boolean| 17)
 (defparameter |SymbolKind.Array| 18)
 
+(define-interface |WorkspaceSymbolParams| ()
+  (|query| :type string))
+
 (define-interface |CodeLensParams| ()
   (|textDocument| :type |TextDocumentIdentifier|))
 

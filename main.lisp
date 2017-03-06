@@ -163,7 +163,7 @@
                      :|referencesProvider| t
                      :|documentHighlightProvider| t
                      :|documentSymbolProvider| t
-                     :|workspaceSymbolProvider| nil
+                     :|workspaceSymbolProvider| t
                      :|codeActionProvider| nil
                      :|codeLensProvider| nil
                      :|documentFormattingProvider| nil
@@ -185,6 +185,9 @@
 
 (define-method "workspace/didChangeConfiguration" (params)
   nil)
+
+(define-method "workspace/symbol" (params)
+  (vector))
 
 (define-method "textDocument/didOpen" (params)
   (let* ((did-open-text-document-params
