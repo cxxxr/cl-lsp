@@ -10,18 +10,18 @@
 (in-package :cl-lsp/slime)
 
 (defun symbol-string-at-point* (point)
-  (let ((string (lem-base:symbol-string-at-point point)))
+  (let ((string (symbol-string-at-point point)))
     (when string
       (values (ppcre:regex-replace "^#\\." string "")))))
 
 (defun beginning-of-defun-point (point &optional limit-lines)
-  (lem-base:with-point ((p point))
-    (lem-base:line-start p)
+  (with-point ((p point))
+    (line-start p)
     (loop
-      (when (char= #\( (lem-base:character-at p))
+      (when (char= #\( (character-at p))
         (return p))
-      (unless (lem-base:line-offset p -1)
-        (return (lem-base::line-start p)))
+      (unless (line-offset p -1)
+        (return (:line-start p)))
       (when limit-lines
         (when (>= 0 (decf limit-lines))
           (return p))))))
@@ -117,14 +117,14 @@
            (funcall function (points-to-string start p))))))))
 
 (defun search-buffer-package (point)
-  (lem-base:with-point ((p point))
-    (lem-base:buffer-start p)
-    (or (loop :while (lem-base:search-forward-regexp p "^\\s*\\(in-package\\s")
-              :do (lem-base:with-point ((start p))
-                    (when (lem-base:form-offset p 1)
+  (with-point ((p point))
+    (buffer-start p)
+    (or (loop :while (search-forward-regexp p "^\\s*\\(in-package\\s")
+              :do (with-point ((start p))
+                    (when (form-offset p 1)
                       (handler-case (let ((name (symbol-name
                                                  (read-from-string
-                                                  (lem-base:points-to-string start p)))))
+                                                  (points-to-string start p)))))
                                       (unless (equal name "CL-USER")
                                         (return (find-package name))))
                         (error ()
