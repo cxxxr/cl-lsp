@@ -187,7 +187,18 @@
   nil)
 
 (define-method "workspace/symbol" (params)
-  (vector))
+  (let* ((params (convert-from-hash-table '|WorkspaceSymbolParams| params))
+         (query (slot-value params '|query|))
+         (limit 42))
+    (list-to-object[]
+     (when (string/= query "")
+       (mapcar #'convert-to-hash-table
+               (loop :with package := (find-package "CL-USER")
+                     :for plist :in (with-swank (:package package)
+                                      (swank:apropos-list-for-emacs query))
+                     :repeat limit
+                     :for name := (getf plist :designator)
+                     :append (symbol-informations name package)))))))
 
 (define-method "textDocument/didOpen" (params)
   (let* ((did-open-text-document-params
