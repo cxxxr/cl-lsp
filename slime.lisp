@@ -113,4 +113,4 @@
         (t
          (with-point ((start p))
            (form-offset p 1)
-           (funcall function p (points-to-string start p))))))))
+           (funcall function (points-to-string start p))))))))

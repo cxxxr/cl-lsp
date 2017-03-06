@@ -534,8 +534,7 @@
         (package (search-buffer-package (lem-base:buffers-start buffer)))
         (buffer-uri (format nil "file://~A" (lem-base:buffer-filename buffer))))
     (map-buffer-symbols
-     buffer (lambda (point symbol-string)
-              (declare (ignore point))
+     buffer (lambda (symbol-string)
               (unless (gethash symbol-string used)
                 (setf (gethash symbol-string used) t)
                 (let ((list (symbol-informations symbol-string package)))
