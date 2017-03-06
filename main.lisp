@@ -464,33 +464,81 @@
               (vector)
               response))))))
 
+(defun type-to-symbol-kind (type)
+  #+sbcl
+  (case type
+    (defvar |SymbolKind.Variable|)
+    (defconstant |SymbolKind.Variable|)
+    (deftype |SymbolKind.Class|)
+    (define-symbol-macro |SymbolKind.Variable|)
+    (defmacro |SymbolKind.Function|)
+    (define-compiler-macro |SymbolKind.Function|)
+    (defun |SymbolKind.Function|)
+    (defgeneric |SymbolKind.Method|)
+    (defmethod |SymbolKind.Method|)
+    (define-setf-expander |SymbolKind.Function|)
+    (defstruct |SymbolKind.Class|)
+    (define-condition |SymbolKind.Class|)
+    (defclass |SymbolKind.Class|)
+    (define-method-combination |SymbolKind.Function|)
+    (defpackage |SymbolKind.Namespace|)
+    (:deftransform |SymbolKind.Function|)
+    (:defoptimizer |SymbolKind.Function|)
+    (:define-vop |SymbolKind.Function|)
+    (:define-source-transform |SymbolKind.Function|)
+    (:def-ir1-translator |SymbolKind.Function|)
+    (declaim |SymbolKind.Function|)
+    (:define-alien-type |SymbolKind.Function|)
+    (otherwise
+     |SymbolKind.Function|))
+  #-sbcl
+  |SymbolKind.Function|)
+
+(defun xref-to-symbol-information (name xref)
+  (optima:match xref
+    ((list (cons type _)
+           (list :location
+                 (list :file file)
+                 (list :position position)
+                 (list :snippet _)))
+     (when (probe-file file)
+       (make-instance '|SymbolInformation|
+                      :|name| name
+                      :|kind| (type-to-symbol-kind type)
+                      :|location| (file-location file position))))))
+
+(defun symbol-informations (name package)
+  (multiple-value-bind (symbol found)
+      (with-swank (:package package)
+        (swank::find-definitions-find-symbol-or-package name))
+    (when found
+      (loop :for xref :in (ignore-errors (swank::find-definitions symbol))
+            :for info := (xref-to-symbol-information name xref)
+            :when info
+            :collect info))))
+
 (defun document-symbol (buffer)
-  (let ((buffer-file (lem-base:buffer-filename buffer))
-        (symbol-informations '())
-        (used (make-hash-table :test 'equal)))
+  (let ((symbol-informations '())
+        (used (make-hash-table :test 'equal))
+        (package (search-buffer-package (lem-base:buffers-start buffer)))
+        (buffer-uri (format nil "file://~A" (lem-base:buffer-filename buffer))))
     (map-buffer-symbols
-     buffer
-     (lambda (point symbol-string)
-       (unless (gethash symbol-string used)
-         (setf (gethash symbol-string used) t)
-         (with-swank (:package (search-buffer-package point))
-           (dolist (def (swank:find-definitions-for-emacs symbol-string))
-             (optima:match def
-               ((list _
-                      (list :location
-                            (list :file file)
-                            (list :position offset)
-                            (list :snippet _)))
-                (when (equal buffer-file file)
-                  (push (convert-to-hash-table
-                         (make-instance '|SymbolInformation|
-                                        :|name| symbol-string
-                                        :|kind| |SymbolKind.Function| ; XXX: Not the correct kind
-                                        :|location| (file-location file offset)))
-                        symbol-informations)))))))))
+     buffer (lambda (point symbol-string)
+              (declare (ignore point))
+              (unless (gethash symbol-string used)
+                (setf (gethash symbol-string used) t)
+                (let ((list (symbol-informations symbol-string package)))
+                  (setf symbol-informations
+                        (nconc symbol-informations
+                               (delete-if-not (lambda (x)
+                                                (when (slot-value x '|location|)
+                                                  (equal buffer-uri
+                                                         (slot-value (slot-value x '|location|)
+                                                                     '|uri|))))
+                                              list)))))))
     (if (null symbol-informations)
         (vector)
-        symbol-informations)))
+        (mapcar #'convert-to-hash-table symbol-informations))))
 
 (define-method "textDocument/documentSymbol" (params)
   (let* ((document-symbol-params (convert-from-hash-table '|DocumentSymbolParams| params))
