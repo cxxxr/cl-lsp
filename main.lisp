@@ -321,51 +321,6 @@
            (make-instance '|Hover|
                           :|contents| ""))))))
 
-#+(or)
-(progn
-  (defun autodoc-parsing-safe-p (point)
-    (not (lem-base:in-string-or-comment-p point)))
-
-  (defun autodoc-parse-context-1 (point suffix)
-    )
-
-  (defun autodoc-parse-context (point)
-    (when (autodoc-parsing-safe-p point)
-      (let ((suffix (list 'swank::%cursor-marker%)))
-        (cond ((and (eql #\( (lem-base:character-at point))
-                    (not (eql #\\ (lem-base:character-at point -1))))
-               (lem-base:form-offset point 1)
-               (push "" suffix))
-              ((or (lem-base:start-line-p point)
-                   (and (eql #\space (character-at point -1))
-                        (not (eql #\\ (lem-base:character-at point -2)))))
-               (push "" suffix))
-              ((and (eql #\( (character-at point -1))
-                    (not (eql #\\ (lem-base:character-at point -2))))
-               (push "" suffix))
-              (t
-               (lem-base:skip-chars-forward point #'lem-base:syntax-symbol-char-p)))
-        (autodoc-parse-context-1 point suffix))))
-  )
-
-(defun parse-arglist-string (string)
-  (labels ((f (start)
-             (let ((list '()))
-               (loop
-                 (multiple-value-bind (ms me)
-                     (ppcre:scan "[()]|[^() \\t\\n]+" string :start start)
-                   (unless ms (return (nreverse list)))
-                   (cond ((string= string "(" :start1 ms :end1 me)
-                          (multiple-value-bind (elt pos) (f me)
-                            (push elt list)
-                            (setf start pos)))
-                         ((string= string ")" :start1 ms :end1 me)
-                          (return (values (nreverse list) me)))
-                         (t
-                          (setf start me)
-                          (push (subseq string ms me) list))))))))
-    (car (f 0))))
-
 (defun arglist (point)
   (loop :with start := (beginning-of-defun-point point)
         :while (lem-base:form-offset point -1)
