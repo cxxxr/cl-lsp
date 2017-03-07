@@ -50,18 +50,18 @@
 
 (defmacro define-method (name (params) &body body)
   (let ((_val (gensym)))
-    `(jsonrpc:register-method *server*
-                              ,name
-                              (lambda (,params)
-                                (declare (ignorable ,params))
-                                (with-error-handle
-                                  (request-log ',name ,params)
-                                  (let ((,_val ,(if (string= name "initialize")
-                                                    `(progn ,@body)
-                                                    `(or (check-initialized)
-                                                         (progn ,@body)))))
-                                    (response-log ,_val)
-                                    ,_val))))))
+    `(jsonrpc:expose *server*
+                     ,name
+                     (lambda (,params)
+                       (declare (ignorable ,params))
+                       (with-error-handle
+                         (request-log ',name ,params)
+                         (let ((,_val ,(if (string= name "initialize")
+                                           `(progn ,@body)
+                                           `(or (check-initialized)
+                                                (progn ,@body)))))
+                           (response-log ,_val)
+                           ,_val))))))
 
 (defun init-buffer (buffer uri)
   (setf (lem-base:buffer-filename buffer)
