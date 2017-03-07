@@ -42,7 +42,8 @@
                           (log-format "~A~%~%~A~%"
                                       c
                                       (with-output-to-string (stream)
-                                        (uiop:print-backtrace :stream stream :condition c))))))
+                                        (uiop:print-backtrace :stream stream
+                                                              :condition c))))))
     (funcall function)))
 
 (defmacro with-error-handle (&body body)
@@ -109,43 +110,44 @@
   (convert-to-hash-table
    (make-instance
     '|InitializeResult|
-    :|capabilities| (make-instance
-                     '|ServerCapabilities|
-                     :|textDocumentSync| (progn
-                                           #+(or)
-                                           (make-instance
-                                            '|TextDocumentSyncOptions|
-                                            :|openClose| t
-                                            :|change| |TextDocumentSyncKind.Incremental|
-                                            :|willSave| 'yason:false
-                                            :|willSaveWaitUntil| 'yason:false
-                                            :|save| (make-instance '|SaveOptions| :|includeText| t))
-                                           |TextDocumentSyncKind.Incremental|)
-                     :|hoverProvider| t
-                     :|completionProvider| (make-instance
-                                            '|CompletionOptions|
-                                            :|resolveProvider| nil
-                                            :|triggerCharacters| (loop :for code
-                                                                       :from (char-code #\a)
-                                                                       :below (char-code #\z)
-                                                                       :collect (string (code-char code))))
-                     :|signatureHelpProvider| (make-instance
-                                               '|SignatureHelpOptions|
-                                               :|triggerCharacters| (list " "))
-                     :|definitionProvider| t
-                     :|referencesProvider| t
-                     :|documentHighlightProvider| t
-                     :|documentSymbolProvider| t
-                     :|workspaceSymbolProvider| t
-                     :|codeActionProvider| nil
-                     :|codeLensProvider| nil
-                     :|documentFormattingProvider| nil
-                     :|documentRangeFormattingProvider| nil
-                     :|documentOnTypeFormattingProvider| nil
-                     :|renameProvider| nil
-                     :|documentLinkProvider| nil
-                     :|executeCommandProvider| nil
-                     :|experimental| nil))))
+    :|capabilities|
+    (make-instance
+     '|ServerCapabilities|
+     :|textDocumentSync| (progn
+                           #+(or)
+                           (make-instance
+                            '|TextDocumentSyncOptions|
+                            :|openClose| t
+                            :|change| |TextDocumentSyncKind.Incremental|
+                            :|willSave| 'yason:false
+                            :|willSaveWaitUntil| 'yason:false
+                            :|save| (make-instance '|SaveOptions| :|includeText| t))
+                           |TextDocumentSyncKind.Incremental|)
+     :|hoverProvider| t
+     :|completionProvider| (make-instance
+                            '|CompletionOptions|
+                            :|resolveProvider| nil
+                            :|triggerCharacters| (loop :for code
+                                                       :from (char-code #\a)
+                                                       :below (char-code #\z)
+                                                       :collect (string (code-char code))))
+     :|signatureHelpProvider| (make-instance
+                               '|SignatureHelpOptions|
+                               :|triggerCharacters| (list " "))
+     :|definitionProvider| t
+     :|referencesProvider| t
+     :|documentHighlightProvider| t
+     :|documentSymbolProvider| t
+     :|workspaceSymbolProvider| t
+     :|codeActionProvider| nil
+     :|codeLensProvider| nil
+     :|documentFormattingProvider| nil
+     :|documentRangeFormattingProvider| nil
+     :|documentOnTypeFormattingProvider| nil
+     :|renameProvider| nil
+     :|documentLinkProvider| nil
+     :|executeCommandProvider| nil
+     :|experimental| nil))))
 
 (define-method "initialized" (params)
   nil)
@@ -372,7 +374,8 @@
                                          (list :file file)
                                          (list :position offset)
                                          (list :snippet _)))
-                             (push (convert-to-hash-table (file-location file offset)) locations)))))
+                             (push (convert-to-hash-table (file-location file offset))
+                                   locations)))))
       (list-to-object-or-object[] locations))))
 
 (define-method "textDocument/documentHighlight" (params)
@@ -386,11 +389,13 @@
                    (read-from-string string))))))
       (let ((regex (ppcre:create-scanner `(:sequence
                                            (:alternation
-                                            (:positive-lookbehind (:char-class #\( #\) #\space #\tab #\:))
+                                            (:positive-lookbehind
+                                             (:char-class #\( #\) #\space #\tab #\:))
                                             :start-anchor)
                                            ,name
                                            (:alternation
-                                            (:positive-lookahead (:char-class #\( #\) #\space #\tab #\:))
+                                            (:positive-lookahead
+                                             (:char-class #\( #\) #\space #\tab #\:))
                                             :end-anchor))
                                          :case-insensitive-mode t)))
         (lem-base:buffer-start point)
@@ -464,18 +469,19 @@
         (package (search-buffer-package (lem-base:buffers-start buffer)))
         (buffer-uri (format nil "file://~A" (lem-base:buffer-filename buffer))))
     (map-buffer-symbols
-     buffer (lambda (symbol-string)
-              (unless (gethash symbol-string used)
-                (setf (gethash symbol-string used) t)
-                (let ((list (symbol-informations symbol-string package)))
-                  (setf symbol-informations
-                        (nconc symbol-informations
-                               (delete-if-not (lambda (x)
-                                                (when (slot-value x '|location|)
-                                                  (equal buffer-uri
-                                                         (slot-value (slot-value x '|location|)
-                                                                     '|uri|))))
-                                              list)))))))
+     buffer
+     (lambda (symbol-string)
+       (unless (gethash symbol-string used)
+         (setf (gethash symbol-string used) t)
+         (let ((list (symbol-informations symbol-string package)))
+           (setf symbol-informations
+                 (nconc symbol-informations
+                        (delete-if-not (lambda (x)
+                                         (when (slot-value x '|location|)
+                                           (equal buffer-uri
+                                                  (slot-value (slot-value x '|location|)
+                                                              '|uri|))))
+                                       list)))))))
     (if (null symbol-informations)
         (vector)
         (mapcar #'convert-to-hash-table symbol-informations))))
