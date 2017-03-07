@@ -63,29 +63,17 @@
                            (response-log ,_val)
                            ,_val))))))
 
-(defun init-buffer (buffer uri)
-  (setf (lem-base:buffer-filename buffer)
-        (quri:uri-path (quri:uri uri)))
-  (setf (lem-base:buffer-syntax-table buffer)
-        *syntax-table*)
-  buffer)
-
 (defun call-with-text-document-position (text-document-position-params function)
   (let* ((position (slot-value text-document-position-params '|position|))
          (uri (slot-value (slot-value text-document-position-params '|textDocument|) '|uri|))
          (buffer (lem-base:get-buffer uri)))
-    (if buffer
-        (let ((point (lem-base:buffer-point buffer)))
-          (init-buffer buffer uri)
-          (move-to-lsp-position point position)
-          (funcall function point))
-        (multiple-value-bind (buffer)
-            (lem-base:find-file-buffer (quri:uri-path (quri:uri uri)))
-          (init-buffer buffer uri)
-          (let ((point (lem-base:buffer-point buffer)))
-            (move-to-lsp-position point position)
-            (unwind-protect (funcall function point)
-              (lem-base:delete-buffer buffer)))))))
+    (cond
+      (buffer
+       (let ((point (lem-base:buffer-point buffer)))
+         (move-to-lsp-position point position)
+         (funcall function point)))
+      (t
+       (vector)))))
 
 (defmacro with-text-document-position ((point) params &body body)
   `(call-with-text-document-position ,params (lambda (,point) ,@body)))
@@ -194,8 +182,10 @@
                       '|textDocument|)))
     (with-slots (|uri| |languageId| |version| |text|)
         text-document
-      (let ((buffer (lem-base:make-buffer |uri|)))
-        (init-buffer buffer |uri|)
+      (let ((buffer (lem-base:make-buffer |uri|
+                                          :filename (quri:uri-path (quri:uri |uri|))
+                                          :enable-undo-p nil
+                                          :syntax-table *syntax-table*)))
         (lem-base:insert-string (lem-base:buffer-point buffer) |text|)
         (setf (lem-base:buffer-value buffer 'document)
               (list :languageId |languageId|
