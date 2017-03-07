@@ -320,45 +320,40 @@
                                '|SignatureInformation|
                                :|label| arglist))))))))
 
-(defun find-definitions (point name)
-  (alexandria:when-let ((p (search-local-definition point name)))
-    (return-from find-definitions (convert-to-hash-table (buffer-location p))))
-  (with-swank (:package (search-buffer-package point))
-    (let ((locations '()))
-      (dolist (def (swank:find-definitions-for-emacs name))
-        (optima:match def
-          ((list _
-                 (list :location
-                       (list :file file)
-                       (list :position offset)
-                       (list :snippet _)))
-           (push (convert-to-hash-table (file-location file offset))
-                 locations))))
-      (list-to-object-or-object[] locations))))
+(defun xref-location (xref)
+  (optima:match xref
+    ((list _
+           (list :location
+                 (list :file file)
+                 (list :position offset)
+                 (list :snippet _)))
+     (convert-to-hash-table (file-location file offset)))))
+
+(defun xref-locations-from-definitions (defs)
+  (loop :for xref :in defs
+        :for location := (xref-location xref)
+        :when location
+        :collect location))
 
 (define-method "textDocument/definition" (params |TextDocumentPositionParams|)
   (with-text-document-position (point) params
     (alexandria:when-let ((name (symbol-string-at-point* point)))
-      (find-definitions point name))))
+      (alexandria:if-let ((p (search-local-definition point name)))
+        (convert-to-hash-table (buffer-location p))
+        (list-to-object-or-object[]
+         (xref-locations-from-definitions
+          (with-swank (:package (search-buffer-package point))
+            (swank:find-definitions-for-emacs name))))))))
 
 (define-method "textDocument/references" (params |ReferenceParams|)
   (with-text-document-position (point) params
-    (let ((symbol-string (symbol-string-at-point* point))
-          (locations '()))
-      (loop :for (type . definitions)
-            :in (with-swank (:package (search-buffer-package point))
-                  (swank:xrefs '(:calls :macroexpands :binds :references :sets :specializes)
-                               symbol-string))
-            :do (loop :for def :in definitions
-                      :do (optima:match def
-                            ((list _
-                                   (list :location
-                                         (list :file file)
-                                         (list :position offset)
-                                         (list :snippet _)))
-                             (push (convert-to-hash-table (file-location file offset))
-                                   locations)))))
-      (list-to-object-or-object[] locations))))
+    (let ((symbol-string (symbol-string-at-point* point)))
+      (list-to-object-or-object[]
+       (loop :for (type . definitions)
+             :in (with-swank (:package (search-buffer-package point))
+                   (swank:xrefs '(:calls :macroexpands :binds :references :sets :specializes)
+                                symbol-string))
+             :nconc (xref-locations-from-definitions definitions))))))
 
 (define-method "textDocument/documentHighlight" (params |TextDocumentPositionParams|)
   (with-text-document-position (point) params
