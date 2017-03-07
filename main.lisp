@@ -508,7 +508,7 @@
   (vector))
 
 (defun run-tcp-mode (&key (port 10003))
-  (with-logger-stream (*error-output*)
+  (with-log-stream (*error-output*)
     (log-format "server-listen~%mode:tcp~%port:~D~%" port)
     (jsonrpc:server-listen *server* :port port :mode :tcp)))
 

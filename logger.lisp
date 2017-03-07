@@ -3,7 +3,7 @@
   (:export :*logger-stream*
            :log-format
            :with-log-file
-           :with-logger-stream))
+           :with-log-stream))
 (in-package :cl-lsp/logger)
 
 (defvar *logger-stream*)
@@ -14,13 +14,16 @@
     (force-output *logger-stream*)))
 
 (defmacro with-log-file ((file) &body body)
-  `(with-open-file (*logger-stream*
-                    ,file
-                    :direction :output
-                    :if-does-not-exist :create
-                    :if-exists :append)
-     ,@body))
+  (let ((_stream (gensym "STREAM")))
+    `(let ((,_stream (open ,file
+                           :direction :output
+                           :if-does-not-exist :create
+                           :if-exists :append)))
+       (setf *logger-stream* ,_stream)
+       (unwind-protect (progn ,@body)
+         (close ,_stream)))))
 
-(defmacro with-logger-stream ((stream) &body body)
-  `(let ((*logger-stream* ,stream))
+(defmacro with-log-stream ((stream) &body body)
+  `(progn
+     (setf *logger-stream* ,stream)
      ,@body))
