@@ -49,18 +49,22 @@
 (defmacro with-error-handle (&body body)
   `(call-with-error-handle (lambda () ,@body)))
 
-(defmacro define-method (name (params) &body body)
+(defmacro define-method (name (params &optional params-type) &body body)
   (let ((_val (gensym)))
     `(jsonrpc:expose *server*
                      ,name
                      (lambda (,params)
-                       (declare (ignorable ,params))
                        (with-error-handle
                          (request-log ',name ,params)
-                         (let ((,_val ,(if (string= name "initialize")
-                                           `(progn ,@body)
-                                           `(or (check-initialized)
-                                                (progn ,@body)))))
+                         (let ((,_val
+                                (let ((,params ,(if params-type
+                                                    `(convert-from-hash-table ',params-type ,params)
+                                                    params)))
+                                  (declare (ignorable ,params))
+                                  ,(if (string= name "initialize")
+                                       `(progn ,@body)
+                                       `(or (check-initialized)
+                                            (progn ,@body))))))
                            (response-log ,_val)
                            ,_val))))))
 
@@ -96,7 +100,7 @@
            "message" "did not initialize")
      :test 'equal)))
 
-(define-method "initialize" (params)
+(define-method "initialize" (params |InitializeParams|)
   (swank:swank-require '("SWANK-TRACE-DIALOG"
                          "SWANK-PACKAGE-FU"
                          "SWANK-PRESENTATIONS"
@@ -106,7 +110,7 @@
                          "SWANK-ARGLISTS"
                          "SWANK-REPL"))
   (setf *swank-fuzzy-completions* (intern "FUZZY-COMPLETIONS" :SWANK))
-  (setf *initialize-params* (convert-from-hash-table '|InitializeParams| params))
+  (setf *initialize-params* params)
   (convert-to-hash-table
    (make-instance
     '|InitializeResult|
@@ -161,9 +165,8 @@
 (define-method "workspace/didChangeConfiguration" (params)
   nil)
 
-(define-method "workspace/symbol" (params)
-  (let* ((params (convert-from-hash-table '|WorkspaceSymbolParams| params))
-         (query (slot-value params '|query|))
+(define-method "workspace/symbol" (params |WorkspaceSymbolParams|)
+  (let* ((query (slot-value params '|query|))
          (limit 42))
     (list-to-object[]
      (when (string/= query "")
@@ -175,13 +178,10 @@
                      :for name := (getf plist :designator)
                      :append (symbol-informations name package)))))))
 
-(define-method "textDocument/didOpen" (params)
-  (let* ((did-open-text-document-params
-          (convert-from-hash-table '|DidOpenTextDocumentParams|
-                                   params))
-         (text-document
-          (slot-value did-open-text-document-params
-                      '|textDocument|)))
+(define-method "textDocument/didOpen" (params |DidOpenTextDocumentParams|)
+  (let ((text-document
+         (slot-value params
+                     '|textDocument|)))
     (with-slots (|uri| |languageId| |version| |text|)
         text-document
       (let ((buffer (lem-base:make-buffer |uri|
@@ -194,16 +194,9 @@
                     :version |version|)))))
   (values))
 
-(define-method "textDocument/didChange" (params)
-  (let* ((did-change-text-document-params
-          (convert-from-hash-table '|DidChangeTextDocumentParams|
-                                   params))
-         (text-document
-          (slot-value did-change-text-document-params
-                      '|textDocument|))
-         (content-changes
-          (slot-value did-change-text-document-params
-                      '|contentChanges|)))
+(define-method "textDocument/didChange" (params |DidChangeTextDocumentParams|)
+  (let ((text-document (slot-value params '|textDocument|))
+        (content-changes (slot-value params '|contentChanges|)))
     (let* ((buffer (lem-base:get-buffer (slot-value text-document '|uri|)))
            (point (lem-base:buffer-point buffer)))
       (dolist (content-change content-changes)
@@ -224,13 +217,11 @@
 (define-method "textDocument/willSaveWaitUntil" (params)
   )
 
-(define-method "textDocument/didSave" (params)
-  (let* ((did-save-text-document-params
-          (convert-from-hash-table '|DidSaveTextDocumentParams| params))
-         (text
-          (slot-value did-save-text-document-params '|text|))
+(define-method "textDocument/didSave" (params |DidSaveTextDocumentParams|)
+  (let* ((text
+          (slot-value params '|text|))
          (text-document
-          (slot-value did-save-text-document-params '|textDocument|))
+          (slot-value params '|textDocument|))
          (uri
           (slot-value text-document '|uri|))
          (buffer
@@ -240,13 +231,9 @@
       (lem-base:insert-string (lem-base:buffer-point buffer) text)))
   (values))
 
-(define-method "textDocument/didClose" (params)
-  (let* ((did-close-text-document-params
-          (convert-from-hash-table '|DidCloseTextDocumentParams|
-                                   params))
-         (text-document
-          (slot-value did-close-text-document-params
-                      '|textDocument|))
+(define-method "textDocument/didClose" (params '|DidCloseTextDocumentParams|)
+  (let* ((text-document
+          (slot-value params '|textDocument|))
          (uri
           (slot-value text-document '|uri|))
          (buffer
@@ -254,9 +241,8 @@
     (lem-base:delete-buffer buffer))
   (values))
 
-(define-method "textDocument/completion" (params)
-  (with-text-document-position (point)
-      (convert-from-hash-table '|TextDocumentPositionParams| params)
+(define-method "textDocument/completion" (params |TextDocumentPositionParams|)
+  (with-text-document-position (point) params
     (lem-base:with-point ((start point)
                           (end point))
       (lem-base:skip-symbol-backward start)
@@ -293,9 +279,8 @@
                                        ;:|data|
                                        ))))))))))
 
-(define-method "textDocument/hover" (params)
-  (with-text-document-position (point)
-      (convert-from-hash-table '|TextDocumentPositionParams| params)
+(define-method "textDocument/hover" (params |TextDocumentPositionParams|)
+  (with-text-document-position (point) params
     (let* ((symbol-string (symbol-string-at-point* point))
            (describe-string
             (ignore-errors
@@ -324,9 +309,8 @@
       (swank:operator-arglist symbol-string
                               (search-buffer-package point)))))
 
-(define-method "textDocument/signatureHelp" (params)
-  (with-text-document-position (point)
-      (convert-from-hash-table '|TextDocumentPositionParams| params)
+(define-method "textDocument/signatureHelp" (params |TextDocumentPositionParams|)
+  (with-text-document-position (point) params
     (let ((arglist (arglist point)))
       (convert-to-hash-table
        (make-instance
@@ -352,15 +336,13 @@
                  locations))))
       (list-to-object-or-object[] locations))))
 
-(define-method "textDocument/definition" (params)
-  (with-text-document-position (point)
-      (convert-from-hash-table '|TextDocumentPositionParams| params)
+(define-method "textDocument/definition" (params |TextDocumentPositionParams|)
+  (with-text-document-position (point) params
     (alexandria:when-let ((name (symbol-string-at-point* point)))
       (find-definitions point name))))
 
-(define-method "textDocument/references" (params)
-  (with-text-document-position (point)
-      (convert-from-hash-table '|ReferenceParams| params)
+(define-method "textDocument/references" (params |ReferenceParams|)
+  (with-text-document-position (point) params
     (let ((symbol-string (symbol-string-at-point* point))
           (locations '()))
       (loop :for (type . definitions)
@@ -378,9 +360,8 @@
                                    locations)))))
       (list-to-object-or-object[] locations))))
 
-(define-method "textDocument/documentHighlight" (params)
-  (with-text-document-position (point)
-      (convert-from-hash-table '|TextDocumentPositionParams| params)
+(define-method "textDocument/documentHighlight" (params |TextDocumentPositionParams|)
+  (with-text-document-position (point) params
     (alexandria:when-let*
         ((string (symbol-string-at-point* point))
          (name (ignore-errors
@@ -486,9 +467,8 @@
         (vector)
         (mapcar #'convert-to-hash-table symbol-informations))))
 
-(define-method "textDocument/documentSymbol" (params)
-  (let* ((document-symbol-params (convert-from-hash-table '|DocumentSymbolParams| params))
-         (text-document (slot-value document-symbol-params '|textDocument|))
+(define-method "textDocument/documentSymbol" (params |DocumentSymbolParams|)
+  (let* ((text-document (slot-value params '|textDocument|))
          (uri (slot-value text-document '|uri|))
          (buffer (lem-base:get-buffer uri)))
     (if buffer
