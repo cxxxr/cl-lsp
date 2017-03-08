@@ -4,14 +4,14 @@
         :cl-lsp/protocol-util
         :cl-lsp/lisp-syntax
         :cl-lsp/logger
-        :cl-lsp/slime)
+        :cl-lsp/slime
+        :cl-lsp/swank)
   (:import-from :cl-ppcre)
   (:import-from :quri)
   (:import-from :jsonrpc)
   (:import-from :yason)
   (:import-from :uiop)
   (:import-from :alexandria)
-  (:import-from :swank)
   (:import-from :optima)
   (:import-from :lem-base)
   (:export :run-tcp-mode
@@ -83,15 +83,7 @@
 (defmacro with-text-document-position ((point) params &body body)
   `(call-with-text-document-position ,params (lambda (,point) ,@body)))
 
-(defmacro with-swank ((&key (package (find-package "CL-USER"))
-                            (readtable '*readtable*))
-                      &body body)
-  `(let ((swank::*buffer-package* ,package)
-         (swank::*buffer-readtable* ,readtable))
-     ,@body))
-
 (defvar *initialize-params* nil)
-(defvar *swank-fuzzy-completions* nil)
 
 (defun check-initialized ()
   (when (null *initialize-params*)
@@ -101,16 +93,8 @@
      :test 'equal)))
 
 (define-method "initialize" (params |InitializeParams|)
-  (swank:swank-require '("SWANK-TRACE-DIALOG"
-                         "SWANK-PACKAGE-FU"
-                         "SWANK-PRESENTATIONS"
-                         "SWANK-FUZZY"
-                         "SWANK-FANCY-INSPECTOR"
-                         "SWANK-C-P-C"
-                         "SWANK-ARGLISTS"
-                         "SWANK-REPL"))
-  (setf *swank-fuzzy-completions* (intern "FUZZY-COMPLETIONS" :SWANK))
   (setf *initialize-params* params)
+  (swank-init)
   (convert-to-hash-table
    (make-instance
     '|InitializeResult|
@@ -235,10 +219,9 @@
       (lem-base:skip-symbol-backward start)
       (lem-base:skip-symbol-forward end)
       (let ((result
-             (with-swank ()
-               (funcall *swank-fuzzy-completions*
-                        (lem-base:points-to-string start end)
-                        (search-buffer-package point)))))
+             (fuzzy-completions
+              (lem-base:points-to-string start end)
+              (search-buffer-package point))))
         (when result
           (destructuring-bind (completions timeout) result
             (declare (ignore timeout))
@@ -270,9 +253,8 @@
   (with-text-document-position (point) params
     (let* ((symbol-string (symbol-string-at-point* point))
            (describe-string
-            (ignore-errors
-             (with-swank (:package (search-buffer-package point))
-               (swank:describe-symbol symbol-string)))))
+            (describe-symbol symbol-string
+                             (search-buffer-package point))))
       (convert-to-hash-table
        (if describe-string
            (lem-base:with-point ((start point)
@@ -293,8 +275,8 @@
   (lem-base:skip-whitespace-forward point)
   (let ((symbol-string (symbol-string-at-point* point)))
     (when symbol-string
-      (swank:operator-arglist symbol-string
-                              (search-buffer-package point)))))
+      (operator-arglist symbol-string
+                        (search-buffer-package point)))))
 
 (define-method "textDocument/signatureHelp" (params |TextDocumentPositionParams|)
   (with-text-document-position (point) params
@@ -329,17 +311,14 @@
         (convert-to-hash-table (buffer-location p))
         (list-to-object-or-object[]
          (xref-locations-from-definitions
-          (with-swank (:package (search-buffer-package point))
-            (swank:find-definitions-for-emacs name))))))))
+          (find-definitions name (search-buffer-package point))))))))
 
 (define-method "textDocument/references" (params |ReferenceParams|)
   (with-text-document-position (point) params
     (let ((symbol-string (symbol-string-at-point* point)))
       (list-to-object-or-object[]
-       (loop :for (type . definitions)
-             :in (with-swank (:package (search-buffer-package point))
-                   (swank:xrefs '(:calls :macroexpands :binds :references :sets :specializes)
-                                symbol-string))
+       (loop :for (type . definitions) :in (xrefs symbol-string
+                                                  (search-buffer-package point))
              :nconc (xref-locations-from-definitions definitions))))))
 
 (define-method "textDocument/documentHighlight" (params |TextDocumentPositionParams|)
@@ -419,14 +398,10 @@
                       :|location| (file-location file position))))))
 
 (defun symbol-informations (name package buffer-file)
-  (multiple-value-bind (symbol found)
-      (with-swank (:package package)
-        (swank::find-definitions-find-symbol-or-package name))
-    (when found
-      (loop :for xref :in (ignore-errors (swank::find-definitions symbol))
-            :for info := (xref-to-symbol-information name xref buffer-file)
-            :when info
-            :collect info))))
+  (loop :for xref :in (find-definitions name package)
+        :for info := (xref-to-symbol-information name xref buffer-file)
+        :when info
+        :collect info))
 
 (defun document-symbol (buffer)
   (let ((symbol-informations '())
@@ -459,10 +434,8 @@
      (when (string/= query "")
        (mapcar #'convert-to-hash-table
                (loop :with package := (find-package "CL-USER")
-                     :for plist :in (with-swank (:package package)
-                                      (swank:apropos-list-for-emacs query))
                      :repeat limit
-                     :for name := (getf plist :designator)
+                     :for name :in (swank-apropos-list query package)
                      :append (symbol-informations name package nil)))))))
 
 (define-method "textDocument/codeLens" (params)
