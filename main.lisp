@@ -449,11 +449,8 @@
   (let* ((text-document (slot-value params '|textDocument|))
          (uri (slot-value text-document '|uri|))
          (buffer (lem-base:get-buffer uri)))
-    (if buffer
-        (document-symbol buffer)
-        (let ((buffer (lem-base:find-file-buffer (quri:uri-path (quri:uri uri)))))
-          (unwind-protect (document-symbol buffer)
-            (lem-base:delete-buffer buffer))))))
+    (when buffer
+      (document-symbol buffer))))
 
 (define-method "workspace/symbol" (params |WorkspaceSymbolParams|)
   (let* ((query (slot-value params '|query|))
