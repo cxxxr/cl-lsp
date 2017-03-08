@@ -202,7 +202,7 @@
       (lem-base:insert-string (lem-base:buffer-point buffer) text)))
   (values))
 
-(define-method "textDocument/didClose" (params '|DidCloseTextDocumentParams|)
+(define-method "textDocument/didClose" (params |DidCloseTextDocumentParams|)
   (let* ((text-document
           (slot-value params '|textDocument|))
          (uri
