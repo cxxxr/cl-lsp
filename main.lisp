@@ -165,19 +165,6 @@
 (define-method "workspace/didChangeConfiguration" (params)
   nil)
 
-(define-method "workspace/symbol" (params |WorkspaceSymbolParams|)
-  (let* ((query (slot-value params '|query|))
-         (limit 42))
-    (list-to-object[]
-     (when (string/= query "")
-       (mapcar #'convert-to-hash-table
-               (loop :with package := (find-package "CL-USER")
-                     :for plist :in (with-swank (:package package)
-                                      (swank:apropos-list-for-emacs query))
-                     :repeat limit
-                     :for name := (getf plist :designator)
-                     :append (symbol-informations name package)))))))
-
 (define-method "textDocument/didOpen" (params |DidOpenTextDocumentParams|)
   (let ((text-document
          (slot-value params
@@ -416,26 +403,28 @@
   #-sbcl
   |SymbolKind.Function|)
 
-(defun xref-to-symbol-information (name xref)
+(defun xref-to-symbol-information (name xref buffer-file)
   (optima:match xref
     ((list (cons type _)
            (list :location
                  (list :file file)
                  (list :position position)
                  (list :snippet _)))
-     (when (probe-file file)
+     (when (and (probe-file file)
+                (or (null buffer-file)
+                    (equal file buffer-file)))
        (make-instance '|SymbolInformation|
                       :|name| name
                       :|kind| (type-to-symbol-kind type)
                       :|location| (file-location file position))))))
 
-(defun symbol-informations (name package)
+(defun symbol-informations (name package buffer-file)
   (multiple-value-bind (symbol found)
       (with-swank (:package package)
         (swank::find-definitions-find-symbol-or-package name))
     (when found
       (loop :for xref :in (ignore-errors (swank::find-definitions symbol))
-            :for info := (xref-to-symbol-information name xref)
+            :for info := (xref-to-symbol-information name xref buffer-file)
             :when info
             :collect info))))
 
@@ -443,24 +432,18 @@
   (let ((symbol-informations '())
         (used (make-hash-table :test 'equal))
         (package (search-buffer-package (lem-base:buffers-start buffer)))
-        (buffer-uri (format nil "file://~A" (lem-base:buffer-filename buffer))))
+        (buffer-file (lem-base:buffer-filename buffer)))
     (map-buffer-symbols
      buffer
      (lambda (symbol-string)
        (unless (gethash symbol-string used)
          (setf (gethash symbol-string used) t)
-         (let ((list (symbol-informations symbol-string package)))
-           (setf symbol-informations
-                 (nconc symbol-informations
-                        (delete-if-not (lambda (x)
-                                         (when (slot-value x '|location|)
-                                           (equal buffer-uri
-                                                  (slot-value (slot-value x '|location|)
-                                                              '|uri|))))
-                                       list)))))))
+         (dolist (si (symbol-informations symbol-string package buffer-file))
+           (push si symbol-informations)))))
     (if (null symbol-informations)
         (vector)
-        (mapcar #'convert-to-hash-table symbol-informations))))
+        (mapcar #'convert-to-hash-table
+                symbol-informations))))
 
 (define-method "textDocument/documentSymbol" (params |DocumentSymbolParams|)
   (let* ((text-document (slot-value params '|textDocument|))
@@ -471,6 +454,19 @@
         (let ((buffer (lem-base:find-file-buffer (quri:uri-path (quri:uri uri)))))
           (unwind-protect (document-symbol buffer)
             (lem-base:delete-buffer buffer))))))
+
+(define-method "workspace/symbol" (params |WorkspaceSymbolParams|)
+  (let* ((query (slot-value params '|query|))
+         (limit 42))
+    (list-to-object[]
+     (when (string/= query "")
+       (mapcar #'convert-to-hash-table
+               (loop :with package := (find-package "CL-USER")
+                     :for plist :in (with-swank (:package package)
+                                      (swank:apropos-list-for-emacs query))
+                     :repeat limit
+                     :for name := (getf plist :designator)
+                     :append (symbol-informations name package nil)))))))
 
 (define-method "textDocument/codeLens" (params)
   (vector))
