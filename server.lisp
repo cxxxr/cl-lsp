@@ -148,6 +148,17 @@
 (define-method "workspace/didChangeConfiguration" (params)
   nil)
 
+(define-method "workspace/symbol" (params |WorkspaceSymbolParams|)
+  (let* ((query (slot-value params '|query|))
+         (limit 42))
+    (list-to-object[]
+     (when (string/= query "")
+       (mapcar #'convert-to-hash-table
+               (loop :with package := (find-package "CL-USER")
+                     :repeat limit
+                     :for name :in (swank-apropos-list query package)
+                     :append (symbol-informations name package nil)))))))
+
 (define-method "textDocument/didOpen" (params |DidOpenTextDocumentParams|)
   (let ((text-document
          (slot-value params
@@ -425,17 +436,6 @@
          (buffer (lem-base:get-buffer uri)))
     (when buffer
       (document-symbol buffer))))
-
-(define-method "workspace/symbol" (params |WorkspaceSymbolParams|)
-  (let* ((query (slot-value params '|query|))
-         (limit 42))
-    (list-to-object[]
-     (when (string/= query "")
-       (mapcar #'convert-to-hash-table
-               (loop :with package := (find-package "CL-USER")
-                     :repeat limit
-                     :for name :in (swank-apropos-list query package)
-                     :append (symbol-informations name package nil)))))))
 
 (define-method "textDocument/codeLens" (params)
   (vector))
