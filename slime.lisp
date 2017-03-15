@@ -21,7 +21,7 @@
       (when (char= #\( (character-at p))
         (return p))
       (unless (line-offset p -1)
-        (return (:line-start p)))
+        (return (line-start p)))
       (when limit-lines
         (when (>= 0 (decf limit-lines))
           (return p))))))
