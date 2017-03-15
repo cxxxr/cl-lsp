@@ -22,6 +22,9 @@
 (defvar *request-log* nil)
 (defvar *response-log* nil)
 
+(defun uri-to-filename (uri)
+  (quri:uri-path (quri:uri uri)))
+
 (defun request-log (name params)
   (when *request-log*
     (log-format "~%* from client~%")
@@ -166,7 +169,7 @@
     (with-slots (|uri| |languageId| |version| |text|)
         text-document
       (let ((buffer (lem-base:make-buffer |uri|
-                                          :filename (quri:uri-path (quri:uri |uri|))
+                                          :filename (uri-to-filename |uri|)
                                           :enable-undo-p nil
                                           :syntax-table *syntax-table*)))
         (lem-base:insert-string (lem-base:buffer-point buffer) |text|)
