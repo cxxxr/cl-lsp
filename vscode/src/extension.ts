@@ -6,8 +6,24 @@
 
 import * as path from 'path';
 import * as child_process from 'child_process';
-import { workspace, Disposable, ExtensionContext, languages, window } from 'vscode';
-import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, TransportKind } from 'vscode-languageclient';
+import { workspace, Disposable, ExtensionContext, languages, window, commands } from 'vscode';
+import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, TransportKind, TextDocumentIdentifier } from 'vscode-languageclient';
+import * as vscode from 'vscode';
+
+let languageClient: LanguageClient;
+
+function startRepl() {
+	//let outputChannel = window.createOutputChannel("repl");
+	//outputChannel.show(true);
+}
+
+function compileAndLoadFile() {
+	let document = window.activeTextEditor.document;
+	let params : TextDocumentIdentifier = {
+		uri: document.uri.toString()
+	}
+	languageClient.sendNotification("lisp/compileAndLoadFile", params);
+}
 
 export function activate(context: ExtensionContext) {
 	let serverOptions: ServerOptions;
@@ -27,7 +43,8 @@ export function activate(context: ExtensionContext) {
 		}
 	}
 
-	let lc = new LanguageClient("Common Lisp Language Server", serverOptions, clientOptions);
-	let disposable = lc.start();
-	context.subscriptions.push(disposable);
+	languageClient = new LanguageClient("Common Lisp Language Server", serverOptions, clientOptions);
+	context.subscriptions.push(commands.registerCommand("lisp.compileAndLoadFile", () => compileAndLoadFile()));
+	context.subscriptions.push(commands.registerCommand("lisp.replStart", () => startRepl()));
+	context.subscriptions.push(languageClient.start());
 }

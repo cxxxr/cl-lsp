@@ -16,6 +16,16 @@
   ],
   "main": "./out/src/extension",
   "contributes": {
+    "commands": [
+      {
+        "command": "lisp.replStart",
+        "title": "Lisp: REPL - start"
+      },
+      {
+        "command": "lisp.compileAndLoadFile",
+        "title": "Lisp: Compile And Load File"
+      }
+    ],
     "configuration": {
       "type": "object",
       "title": "Example configuration",
@@ -34,7 +44,7 @@
           ],
           "default": "off",
           "description": "Traces the communication between VSCode and the languageServerExample service."
-        }        
+        }
       }
     }
   },
