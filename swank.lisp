@@ -7,7 +7,8 @@
            :xrefs
            :operator-arglist
            :find-definitions
-           :swank-apropos-list))
+           :swank-apropos-list
+           :swank-compile-file))
 (in-package :cl-lsp/swank)
 
 (defvar *fuzzy-completions* nil)
@@ -59,3 +60,7 @@
 (defun swank-apropos-list (name package)
   (with-swank (:package package)
     (mapcar #'cadr (swank:apropos-list-for-emacs name))))
+
+(defun swank-compile-file (filename loadp)
+  (with-swank ()
+    (swank:compile-file-for-emacs filename loadp)))

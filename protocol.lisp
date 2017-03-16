@@ -55,6 +55,11 @@
   (|source| :optional t :type (or null string))
   (|message| :type string))
 
+(export (defparameter |DiagnosticSeverity.Error| 1))
+(export (defparameter |DiagnosticSeverity.Warning| 2))
+(export (defparameter |DiagnosticSeverity.Information| 3))
+(export (defparameter |DiagnosticSeverity.Hint| 4))
+
 (define-interface |Command| ()
   (|title| :type string)
   (|command| :type string)
@@ -193,6 +198,11 @@
   (|type| :type number)
   (|message| :type string))
 
+(export (defparameter |MessageType.Error| 1))
+(export (defparameter |MessageType.Warning| 2))
+(export (defparameter |MessageType.Info| 3))
+(export (defparameter |MessageType.Log| 4))
+
 (define-interface |ShowMessageRequestParams| ()
   (|type| :type number)
   (|message| :type string)
@@ -244,6 +254,10 @@
 
 (define-interface |DidCloseTextDocumentParams| ()
   (|textDocument| :type |TextDocumentIdentifier|))
+
+(define-interface |PublishDiagnosticsParams| ()
+  (|uri| :type |DocumentUri|)
+  (|diagnostics| :type (trivial-types:proper-list |Diagnostic|)))
 
 (define-interface |CompletionList| ()
   (|isIncomplete| :type boolean)
