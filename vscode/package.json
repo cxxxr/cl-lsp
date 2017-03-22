@@ -24,6 +24,10 @@
       {
         "command": "lisp.compileAndLoadFile",
         "title": "Lisp: Compile And Load File"
+      },
+      {
+        "command": "lisp.evalLastSexp",
+        "title": "Lisp: Evaluate Sexp before position"
       }
     ],
     "configuration": {

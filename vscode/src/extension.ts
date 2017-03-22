@@ -6,23 +6,49 @@
 
 import * as path from 'path';
 import * as child_process from 'child_process';
-import { workspace, Disposable, ExtensionContext, languages, window, commands } from 'vscode';
-import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, TransportKind, TextDocumentIdentifier } from 'vscode-languageclient';
-import * as vscode from 'vscode';
+import {
+	workspace, Disposable, ExtensionContext, languages,
+	window, commands, InputBoxOptions
+} from 'vscode';
+import {
+	LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions,
+	TransportKind, TextDocumentIdentifier, TextDocumentPositionParams
+} from 'vscode-languageclient';
 
 let languageClient: LanguageClient;
 
 function startRepl() {
 	//let outputChannel = window.createOutputChannel("repl");
 	//outputChannel.show(true);
+	// let option: InputBoxOptions = {
+	// 	ignoreFocusOut: false,
+	// 	password: false,
+	// 	prompt: "Eval",
+	// }
+	// window.showInputBox(option);
+
+	console.log(window.activeTextEditor.selection.active);
+}
+
+function getTextDocumentIdentifier() {
+	let document = window.activeTextEditor.document;
+	let params: TextDocumentIdentifier = {
+		uri: document.uri.toString()
+	}
+	return params;
 }
 
 function compileAndLoadFile() {
-	let document = window.activeTextEditor.document;
-	let params : TextDocumentIdentifier = {
-		uri: document.uri.toString()
-	}
+	let params = getTextDocumentIdentifier();
 	languageClient.sendNotification("lisp/compileAndLoadFile", params);
+}
+
+function evalLastSexp() {
+	let params: TextDocumentPositionParams = {
+		textDocument: getTextDocumentIdentifier(),
+		position: window.activeTextEditor.selection.active
+	}
+	languageClient.sendNotification("lisp/evalLastSexp", params);
 }
 
 export function activate(context: ExtensionContext) {
@@ -45,6 +71,7 @@ export function activate(context: ExtensionContext) {
 
 	languageClient = new LanguageClient("Common Lisp Language Server", serverOptions, clientOptions);
 	context.subscriptions.push(commands.registerCommand("lisp.compileAndLoadFile", () => compileAndLoadFile()));
+	context.subscriptions.push(commands.registerCommand("lisp.evalLastSexp", () => evalLastSexp()));
 	context.subscriptions.push(commands.registerCommand("lisp.replStart", () => startRepl()));
 	context.subscriptions.push(languageClient.start());
 }

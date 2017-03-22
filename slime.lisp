@@ -4,6 +4,10 @@
   (:import-from :cl-ppcre)
   (:export :symbol-string-at-point*
            :beginning-of-defun-point
+           :beginning-of-defun
+           :top-of-defun
+           :top-of-defun-string
+           :last-form-string
            :search-local-definition
            :map-buffer-symbols
            :search-buffer-package))
@@ -14,17 +18,41 @@
     (when string
       (values (ppcre:regex-replace "^#\\." string "")))))
 
-(defun beginning-of-defun-point (point &optional limit-lines)
+(defun beginning-of-defun-point (point n)
+  (with-point ((curr point))
+    (if (minusp n)
+        (dotimes (_ (- n) curr)
+          (if (start-line-p curr)
+              (line-offset curr -1)
+              (line-start curr))
+          (loop
+            (when (char= #\( (character-at curr 0))
+              (return))
+            (unless (line-offset curr -1)
+              (return-from beginning-of-defun-point curr))))
+        (dotimes (_ n curr)
+          (loop
+            (unless (line-offset curr 1)
+              (return-from beginning-of-defun-point curr))
+            (when (char= #\( (character-at curr 0))
+              (return)))))))
+
+(defun beginning-of-defun (point n)
+  (move-point point (beginning-of-defun-point point n)))
+
+(defun top-of-defun (point)
+  (beginning-of-defun (line-end point) -1))
+
+(defun top-of-defun-string (point)
+  (top-of-defun point)
   (with-point ((p point))
-    (line-start p)
-    (loop
-      (when (char= #\( (character-at p))
-        (return p))
-      (unless (line-offset p -1)
-        (return (line-start p)))
-      (when limit-lines
-        (when (>= 0 (decf limit-lines))
-          (return p))))))
+    (form-offset p 1)
+    (points-to-string point p)))
+
+(defun last-form-string (point)
+  (with-point ((start point))
+    (when (form-offset start -1)
+      (points-to-string start point))))
 
 (defvar *variable-binding-ops*
   '(("let" &bindings 1 &body 2)

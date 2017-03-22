@@ -281,7 +281,7 @@
                           :|contents| ""))))))
 
 (defun arglist (point)
-  (loop :with start := (beginning-of-defun-point point)
+  (loop :with start := (beginning-of-defun-point point 1)
         :while (lem-base:form-offset point -1)
         :do (when (lem-base:point< point start)
               (return-from arglist nil)))
@@ -446,6 +446,22 @@
   (vector))
 
 
+(defun notify-show-message (type message)
+  (jsonrpc:notify-async *server*
+                        "window/showMessage"
+                        (convert-to-hash-table
+                         (make-instance '|ShowMessageParams|
+                                        :|type| type
+                                        :|message| message))))
+
+(defun notify-log-message (type message)
+  (jsonrpc:notify-async *server*
+                        "window/logMessage"
+                        (convert-to-hash-table
+                         (make-instance '|LogMessageParams|
+                                        :|type| type
+                                        :|message| message))))
+
 (defun get-buffer-from-file (file)
   (dolist (buffer (lem-base:buffer-list))
     (when (uiop:pathname-equal file (lem-base:buffer-filename buffer))
@@ -505,16 +521,7 @@
     (when secs
       (format nil "[~,2f secs]" secs))))
 
-(defun notify-show-message (type message)
-  (jsonrpc:notify-async *server*
-                        "window/showMessage"
-                        (convert-to-hash-table
-                         (make-instance '|ShowMessageParams|
-                                        :|type| type
-                                        :|message| message))))
-
-(define-method "lisp/compileAndLoadFile" (params)
-  (setf params (convert-from-hash-table '|TextDocumentIdentifier| params))
+(define-method "lisp/compileAndLoadFile" (params |TextDocumentIdentifier|)
   (let* ((uri (slot-value params '|uri|))
          (filename (uri-to-filename uri))
          (result))
@@ -543,5 +550,31 @@
               (handler-case (load fastfile)
                 (error (condition)
                   (notify-show-message |MessageType.Error|
-                                       (princ-to-string c))))))))))
+                                       (princ-to-string condition))))))))))
   nil)
+
+(define-method "lisp/evalLastSexp" (params |TextDocumentPositionParams|)
+  (with-text-document-position (point) params
+    (let ((string (last-form-string point))
+          (result))
+      (when string
+        (let ((output-string
+               (with-output-to-string (*standard-output*)
+                 (ignore-errors
+                  (handler-bind ((error (lambda (c)
+                                          (format t "~A~%~%" c)
+                                          (uiop:print-backtrace :condition c :stream *standard-output*))))
+                    (setf result
+                          (if (ppcre:scan "^\\s*\\(defvar(?:\\s|$)" string)
+                              (let ((form (read-from-string string)))
+                                (destructuring-bind (defvar name &rest rest) form
+                                  (declare (ignore defvar rest))
+                                  (makunbound name)
+                                  (prin1-to-string (eval form))))
+                              (let ((values (multiple-value-list (eval (read-from-string string)))))
+                                (finish-output)
+                                (format nil "~{~A~^, ~}" values)))))))))
+          (unless (string= output-string "")
+            (notify-log-message |MessageType.Log| output-string))
+          (notify-log-message |MessageType.Log| result)))
+      nil)))
