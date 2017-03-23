@@ -467,6 +467,10 @@
     (when (uiop:pathname-equal file (lem-base:buffer-filename buffer))
       (return buffer))))
 
+(defun eval-string-in-package (string package)
+  (let ((*package* package))
+    (eval (read-from-string string))))
+
 (defun compilation-notes-to-diagnostics (notes)
   (let ((diagnostics '()))
     (dolist (note notes)
@@ -547,15 +551,14 @@
                                   "textDocument/publishDiagnostics"
                                   diagnostics-params)
             (when (and loadp fastfile successp)
-              (handler-case (load fastfile)
+              (handler-case (let ((output-string
+                                   (with-output-to-string (*standard-output*)
+                                     (load fastfile))))
+                              (notify-log-message |MessageType.Log| output-string))
                 (error (condition)
                   (notify-show-message |MessageType.Error|
                                        (princ-to-string condition))))))))))
   nil)
-
-(defun eval-string-in-package (string package)
-  (let ((*package* package))
-    (eval (read-from-string string))))
 
 (define-method "lisp/evalLastSexp" (params |TextDocumentPositionParams|)
   (with-text-document-position (point) params
