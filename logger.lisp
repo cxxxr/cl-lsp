@@ -7,7 +7,7 @@
            :with-log-stream))
 (in-package :cl-lsp/logger)
 
-(defvar *enable-logger* nil)
+(defvar *enable-logger* t)
 (defvar *logger-stream*)
 
 (defun log-format (string &rest args)
@@ -17,11 +17,13 @@
 
 (defun call-with-log-file (file function)
   (if *enable-logger*
-      (with-open-file (*logger-stream* file
-                                       :direction :output
-                                       :if-does-not-exist :create
-                                       :if-exists :append)
-        (funcall function))
+      (let ((stream (open file
+                          :direction :output
+                          :if-does-not-exist :create
+                          :if-exists :append)))
+        (setf *logger-stream* stream)
+        (unwind-protect (funcall function)
+          (close stream)))
       (funcall function)))
 
 (defmacro with-log-file ((file) &body body)
