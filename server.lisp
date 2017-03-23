@@ -556,25 +556,33 @@
 (define-method "lisp/evalLastSexp" (params |TextDocumentPositionParams|)
   (with-text-document-position (point) params
     (let ((string (last-form-string point))
-          (result))
+          (result)
+          (error))
       (when string
         (let ((output-string
                (with-output-to-string (*standard-output*)
-                 (ignore-errors
-                  (handler-bind ((error (lambda (c)
-                                          (format t "~A~%~%" c)
-                                          (uiop:print-backtrace :condition c :stream *standard-output*))))
-                    (setf result
-                          (if (ppcre:scan "^\\s*\\(defvar(?:\\s|$)" string)
-                              (let ((form (read-from-string string)))
-                                (destructuring-bind (defvar name &rest rest) form
-                                  (declare (ignore defvar rest))
-                                  (makunbound name)
-                                  (prin1-to-string (eval form))))
-                              (let ((values (multiple-value-list (eval (read-from-string string)))))
-                                (finish-output)
-                                (format nil "~{~A~^, ~}" values)))))))))
+                 (setf error
+                       (nth-value 1
+                                  (ignore-errors
+                                   (handler-bind ((error (lambda (c)
+                                                           (format t "~A~%~%" c)
+                                                           (uiop:print-backtrace
+                                                            :condition c
+                                                            :stream *standard-output*))))
+                                     (setf result
+                                           (if (ppcre:scan "^\\s*\\(defvar(?:\\s|$)" string)
+                                               (let ((form (read-from-string string)))
+                                                 (destructuring-bind (defvar name &rest rest) form
+                                                   (declare (ignore defvar rest))
+                                                   (makunbound name)
+                                                   (prin1-to-string (eval form))))
+                                               (let ((values (multiple-value-list
+                                                              (eval (read-from-string string)))))
+                                                 (finish-output)
+                                                 (format nil "~{~A~^, ~}" values)))))))))))
           (unless (string= output-string "")
             (notify-log-message |MessageType.Log| output-string))
-          (notify-log-message |MessageType.Log| result)))
+          (if error
+              (notify-show-message |MessageType.Error| (princ-to-string error))
+              (notify-show-message |MessageType.Info| result))))
       nil)))
