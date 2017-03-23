@@ -553,33 +553,32 @@
                                        (princ-to-string condition))))))))))
   nil)
 
+(defun eval-string-in-package (string package)
+  (let ((*package* package))
+    (eval (read-from-string string))))
+
 (define-method "lisp/evalLastSexp" (params |TextDocumentPositionParams|)
   (with-text-document-position (point) params
     (let ((string (last-form-string point))
+          (package (search-buffer-package point))
           (result)
           (error))
       (when string
         (let ((output-string
                (with-output-to-string (*standard-output*)
                  (setf error
-                       (nth-value 1
-                                  (ignore-errors
-                                   (handler-bind ((error (lambda (c)
-                                                           (format t "~A~%~%" c)
-                                                           (uiop:print-backtrace
-                                                            :condition c
-                                                            :stream *standard-output*))))
-                                     (setf result
-                                           (if (ppcre:scan "^\\s*\\(defvar(?:\\s|$)" string)
-                                               (let ((form (read-from-string string)))
-                                                 (destructuring-bind (defvar name &rest rest) form
-                                                   (declare (ignore defvar rest))
-                                                   (makunbound name)
-                                                   (prin1-to-string (eval form))))
-                                               (let ((values (multiple-value-list
-                                                              (eval (read-from-string string)))))
-                                                 (finish-output)
-                                                 (format nil "~{~A~^, ~}" values)))))))))))
+                       (nth-value
+                        1
+                        (ignore-errors
+                         (handler-bind ((error (lambda (c)
+                                                 (format t "~A~%~%" c)
+                                                 (uiop:print-backtrace
+                                                  :condition c
+                                                  :stream *standard-output*))))
+                           (setf result
+                                 (format nil "~{~A~^, ~}"
+                                         (multiple-value-list
+                                          (eval-string-in-package string package)))))))))))
           (unless (string= output-string "")
             (notify-log-message |MessageType.Log| output-string))
           (if error
