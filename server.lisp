@@ -22,8 +22,6 @@
 (defvar *request-log* nil)
 (defvar *response-log* nil)
 
-(defun uri-to-filename (uri)
-  (quri:uri-path (quri:uri uri)))
 
 (defun request-log (name params)
   (when *request-log*

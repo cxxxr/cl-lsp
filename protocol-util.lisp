@@ -4,6 +4,8 @@
         :cl-lsp/protocol)
   (:export :list-to-object-or-object[]
            :list-to-object[]
+           :uri-to-filename
+           :filename-to-uri
            :move-to-lsp-position
            :make-lsp-range
            :file-location
@@ -18,6 +20,12 @@
 (defun list-to-object[] (list)
   (cond ((null list) (vector))
         (t list)))
+
+(defun uri-to-filename (uri)
+  (quri:uri-path (quri:uri uri)))
+
+(defun filename-to-uri (uri)
+  (format nil "file://~A" uri))
 
 (defun move-to-lsp-position (point position)
   (declare (type point point)
@@ -40,7 +48,7 @@
 (defun line-location (file line start-charpos end-charpos)
   (make-instance
    '|Location|
-   :|uri| (format nil "file://~A" file)
+   :|uri| (filename-to-uri file)
    :|range| (make-instance
              '|Range|
              :|start| (make-instance
