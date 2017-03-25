@@ -353,15 +353,19 @@
                        (lem-base:character-offset start (- (length name)))
                        (funcall function (make-lsp-range start point)))))))
 
+(defun symbol-name-at-point (point)
+  (alexandria:when-let*
+      ((string (symbol-string-at-point* point))
+       (name (ignore-errors
+              (symbol-name
+               (let ((*package* (search-buffer-package point)))
+                 (read-from-string string))))))
+    name))
+
 (define-method "textDocument/documentHighlight" (params |TextDocumentPositionParams|)
   (with-text-document-position (point) params
     (list-to-object[]
-     (alexandria:when-let*
-         ((string (symbol-string-at-point* point))
-          (name (ignore-errors
-                 (symbol-name
-                  (let ((*package* (search-buffer-package point)))
-                    (read-from-string string))))))
+     (alexandria:when-let (name (symbol-name-at-point point))
        (collect-symbol-range (lem-base:point-buffer point) name
                              (lambda (range)
                                (convert-to-hash-table
