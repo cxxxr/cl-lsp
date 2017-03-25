@@ -334,6 +334,24 @@
                                                   (search-buffer-package point))
              :nconc (xref-locations-from-definitions definitions))))))
 
+(defun collect-symbol-range (buffer name function)
+  (let ((regex (ppcre:create-scanner `(:sequence
+                                       (:alternation
+                                        (:positive-lookbehind
+                                         (:char-class #\( #\) #\space #\tab #\:))
+                                        :start-anchor)
+                                       ,name
+                                       (:alternation
+                                        (:positive-lookahead
+                                         (:char-class #\( #\) #\space #\tab #\:))
+                                        :end-anchor))
+                                     :case-insensitive-mode t)))
+    (lem-base:with-point ((point (lem-base:buffer-start-point buffer)))
+      (loop :while (lem-base:search-forward-regexp point regex)
+            :collect (lem-base:with-point ((start point))
+                       (lem-base:character-offset start (- (length name)))
+                       (funcall function (make-lsp-range start point)))))))
+
 (define-method "textDocument/documentHighlight" (params |TextDocumentPositionParams|)
   (with-text-document-position (point) params
     (list-to-object[]
@@ -343,26 +361,11 @@
                  (symbol-name
                   (let ((*package* (search-buffer-package point)))
                     (read-from-string string))))))
-       (let ((regex (ppcre:create-scanner `(:sequence
-                                            (:alternation
-                                             (:positive-lookbehind
-                                              (:char-class #\( #\) #\space #\tab #\:))
-                                             :start-anchor)
-                                            ,name
-                                            (:alternation
-                                             (:positive-lookahead
-                                              (:char-class #\( #\) #\space #\tab #\:))
-                                             :end-anchor))
-                                          :case-insensitive-mode t)))
-         (lem-base:buffer-start point)
-         (let ((response
-                (loop :while (lem-base:search-forward-regexp point regex)
-                      :collect (lem-base:with-point ((start point))
-                                 (lem-base:character-offset start (- (length name)))
-                                 (convert-to-hash-table
-                                  (make-instance '|DocumentHighlight|
-                                                 :|range| (make-lsp-range start point)))))))
-           response))))))
+       (collect-symbol-range (lem-base:point-buffer point) name
+                             (lambda (range)
+                               (convert-to-hash-table
+                                (make-instance '|DocumentHighlight|
+                                               :|range| range))))))))
 
 (defun type-to-symbol-kind (type)
   #+sbcl
