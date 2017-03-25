@@ -69,8 +69,13 @@
   (|range| :type |Range|)
   (|newText| :type string))
 
+(define-interface |TextDocumentEdit| ()
+  (|textDocument| :type |VersionedTextDocumentIdentifier|)
+  (|edits| :type (trivial-types:proper-list |TextEdit|)))
+
 (define-interface |WorkspaceEdit| ()
-  (|changes|))
+  (|changes| :optional t)
+  (|documentChanges| :optional t :type (trivial-types:proper-list |TextDocumentEdit|)))
 
 (define-interface |TextDocumentIdentifier| ()
   (|uri| :type |DocumentUri|))
@@ -354,6 +359,11 @@
 (define-interface |DocumentLink| ()
   (|range| :type |Range|)
   (|target| :optional t :type |DocumentUri|))
+
+(define-interface |RenameParams| ()
+  (|textDocument| :type |TextDocumentIdentifier|)
+  (|position| :type |Position|)
+  (|newName| :type string))
 
 (defun protocol-symbol-p (type)
   (when (member type *protocol-symbols*)
