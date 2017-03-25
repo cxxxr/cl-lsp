@@ -2,6 +2,7 @@
   (:use :cl
         :lem-base
         :cl-lsp/protocol)
+  (:import-from :quri)
   (:export :list-to-object-or-object[]
            :list-to-object[]
            :uri-to-filename

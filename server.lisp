@@ -7,7 +7,6 @@
         :cl-lsp/slime
         :cl-lsp/swank)
   (:import-from :cl-ppcre)
-  (:import-from :quri)
   (:import-from :jsonrpc)
   (:import-from :yason)
   (:import-from :uiop)
