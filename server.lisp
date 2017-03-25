@@ -70,17 +70,20 @@
                            (response-log ,_val)
                            ,_val))))))
 
+(defun call-with-document-position (uri position function)
+  (let ((buffer (lem-base:get-buffer uri)))
+    (assert (lem-base:bufferp buffer))
+    (let ((point (lem-base:buffer-point buffer)))
+      (move-to-lsp-position point position)
+      (funcall function point))))
+
+(defmacro with-document-position ((point uri position) &body body)
+  `(call-with-document-position ,uri ,position (lambda (,point) ,@body)))
+
 (defun call-with-text-document-position (text-document-position-params function)
-  (let* ((position (slot-value text-document-position-params '|position|))
-         (uri (slot-value (slot-value text-document-position-params '|textDocument|) '|uri|))
-         (buffer (lem-base:get-buffer uri)))
-    (cond
-      (buffer
-       (let ((point (lem-base:buffer-point buffer)))
-         (move-to-lsp-position point position)
-         (funcall function point)))
-      (t
-       (vector)))))
+  (let ((position (slot-value text-document-position-params '|position|))
+        (uri (slot-value (slot-value text-document-position-params '|textDocument|) '|uri|)))
+    (call-with-document-position uri position function)))
 
 (defmacro with-text-document-position ((point) params &body body)
   `(call-with-text-document-position ,params (lambda (,point) ,@body)))
