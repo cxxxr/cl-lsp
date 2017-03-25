@@ -134,7 +134,7 @@
      :|documentFormattingProvider| nil
      :|documentRangeFormattingProvider| nil
      :|documentOnTypeFormattingProvider| nil
-     :|renameProvider| nil
+     :|renameProvider| t
      :|documentLinkProvider| nil
      :|executeCommandProvider| nil
      :|experimental| nil))))
@@ -451,6 +451,30 @@
 
 (define-method "textDocument/documentLink" (params)
   (vector))
+
+(define-method "textDocument/rename" (params |RenameParams|)
+  (with-slots (|textDocument| |position| |newName|) params
+    (with-document-position (point (slot-value |textDocument| '|uri|) |position|)
+      (alexandria:when-let ((name (symbol-name-at-point point)))
+        (let ((buffer (lem-base:point-buffer point)))
+          (convert-to-hash-table
+           (make-instance
+            '|WorkspaceEdit|
+            :|documentChanges|
+            (list
+             (make-instance '|TextDocumentEdit|
+                            :|textDocument| (make-instance
+                                             '|VersionedTextDocumentIdentifier|
+                                             :|version| (lem-base:buffer-version buffer)
+                                             :|uri| (uri-to-filename
+                                                     (lem-base:buffer-filename buffer)))
+                            :|edits| (collect-symbol-range
+                                      (lem-base:point-buffer point)
+                                      name
+                                      (lambda (range)
+                                        (make-instance '|TextEdit|
+                                                       :|range| range
+                                                       :|newText| |newName|))))))))))))
 
 
 (defun notify-show-message (type message)
