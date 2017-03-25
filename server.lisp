@@ -418,7 +418,7 @@
 (defun document-symbol (buffer)
   (let ((symbol-informations '())
         (used (make-hash-table :test 'equal))
-        (package (search-buffer-package (lem-base:buffers-start buffer)))
+        (package (search-buffer-package (lem-base:buffer-start-point buffer)))
         (buffer-file (lem-base:buffer-filename buffer)))
     (map-buffer-symbols
      buffer

@@ -124,7 +124,7 @@
                        (unless (scan-lists p 1 1 t) (return)))))))
 
 (defun map-buffer-symbols (buffer function)
-  (with-point ((p (buffers-start buffer)))
+  (with-point ((p (buffer-start-point buffer)))
     (loop
       (loop
         (when (= 0 (skip-chars-forward p
