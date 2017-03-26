@@ -456,25 +456,28 @@
   (with-slots (|textDocument| |position| |newName|) params
     (with-document-position (point (slot-value |textDocument| '|uri|) |position|)
       (alexandria:when-let ((name (symbol-name-at-point point)))
-        (let ((buffer (lem-base:point-buffer point)))
+        (let* ((buffer (lem-base:point-buffer point))
+               (uri (filename-to-uri (lem-base:buffer-filename buffer)))
+               (edits (collect-symbol-range
+                       (lem-base:point-buffer point)
+                       name
+                       (lambda (range)
+                         (make-instance '|TextEdit|
+                                        :|range| range
+                                        :|newText| |newName|)))))
           (convert-to-hash-table
            (make-instance
             '|WorkspaceEdit|
-            :|documentChanges|
-            (list
-             (make-instance '|TextDocumentEdit|
-                            :|textDocument| (make-instance
-                                             '|VersionedTextDocumentIdentifier|
-                                             :|version| (lem-base:buffer-version buffer)
-                                             :|uri| (uri-to-filename
-                                                     (lem-base:buffer-filename buffer)))
-                            :|edits| (collect-symbol-range
-                                      (lem-base:point-buffer point)
-                                      name
-                                      (lambda (range)
-                                        (make-instance '|TextEdit|
-                                                       :|range| range
-                                                       :|newText| |newName|))))))))))))
+            :|changes| (alexandria:plist-hash-table (list uri edits))
+            ;; :|documentChanges| (list
+            ;;                     (make-instance
+            ;;                      '|TextDocumentEdit|
+            ;;                      :|textDocument| (make-instance
+            ;;                                       '|VersionedTextDocumentIdentifier|
+            ;;                                       :|version| (lem-base:buffer-version buffer)
+            ;;                                       :|uri| uri)
+            ;;                      :|edits| edits))
+            )))))))
 
 
 (defun notify-show-message (type message)
