@@ -16,7 +16,7 @@
 (defun symbol-string-at-point* (point)
   (let ((string (symbol-string-at-point point)))
     (when string
-      (values (ppcre:regex-replace "^#\\." string "")))))
+      (values (ppcre:regex-replace "^(?:#\\.|,@)" string "")))))
 
 (defun beginning-of-defun-point (point n)
   (with-point ((curr point))
