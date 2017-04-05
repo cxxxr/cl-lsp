@@ -128,10 +128,10 @@
     (loop
       (loop
         (when (= 0 (skip-chars-forward p
-                                       (lambda (c)
-                                         (or (member c '(#\, #\' #\`))
-                                             (syntax-symbol-char-p c)))
-                                       t))
+                                       (complement
+                                        (lambda (c)
+                                          (or (member c '(#\, #\' #\`))
+                                              (syntax-symbol-char-p c))))))
           (return-from map-buffer-symbols))
         (alexandria:if-let ((str (looking-at p ",@|,|'|`|#\\.")))
           (character-offset p (length str))
