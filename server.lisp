@@ -67,8 +67,11 @@
                            (response-log ,_val)
                            ,_val))))))
 
+(defun get-buffer-from-uri (uri)
+  (lem-base:get-buffer uri))
+
 (defun call-with-document-position (uri position function)
-  (let ((buffer (lem-base:get-buffer uri)))
+  (let ((buffer (get-buffer-from-uri uri)))
     (assert (lem-base:bufferp buffer))
     (let ((point (lem-base:buffer-point buffer)))
       (move-to-lsp-position point position)
@@ -448,7 +451,10 @@
     (when buffer
       (document-symbol buffer))))
 
-(define-method "textDocument/formatting" (params))
+(define-method "textDocument/formatting" (params |DocumentFormattingParams|)
+  (with-slots (|textDocument| |options|) params
+    (let ((buffer (get-buffer-from-uri (slot-value |textDocument| '|uri|))))
+      (buffer-formatting buffer |options|))))
 
 (define-method "textDocument/rangeFormatting" (params |DocumentRangeFormattingParams|)
   (with-slots (|textDocument| |range| |options|) params
