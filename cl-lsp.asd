@@ -1,3 +1,3 @@
-(asdf:defsystem :cl-lsp
+(defsystem "cl-lsp"
   :class :package-inferred-system
-  :depends-on ("cl-lsp/main"))
+  :depends-on ("lem-base" "lem-lisp-syntax" "cl-lsp/main"))

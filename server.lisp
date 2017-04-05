@@ -5,7 +5,8 @@
         :cl-lsp/lisp-syntax
         :cl-lsp/logger
         :cl-lsp/slime
-        :cl-lsp/swank)
+        :cl-lsp/swank
+        :cl-lsp/formatting)
   (:import-from :cl-ppcre)
   (:import-from :jsonrpc)
   (:import-from :yason)
@@ -18,9 +19,8 @@
 
 (defvar *server* (jsonrpc:make-server))
 
-(defvar *request-log* nil)
-(defvar *response-log* nil)
-
+(defvar *request-log* t)
+(defvar *response-log* t)
 
 (defun request-log (name params)
   (when *request-log*
@@ -131,9 +131,11 @@
      :|workspaceSymbolProvider| t
      :|codeActionProvider| nil
      :|codeLensProvider| nil
-     :|documentFormattingProvider| nil
-     :|documentRangeFormattingProvider| nil
-     :|documentOnTypeFormattingProvider| nil
+     :|documentFormattingProvider| t
+     :|documentRangeFormattingProvider| t
+     :|documentOnTypeFormattingProvider| (make-instance
+                                          '|DocumentOnTypeFormattingOptions|
+                                          :|firstTriggerCharacter| ")")
      :|renameProvider| t
      :|documentLinkProvider| nil
      :|executeCommandProvider| nil
@@ -445,6 +447,21 @@
          (buffer (lem-base:get-buffer uri)))
     (when buffer
       (document-symbol buffer))))
+
+(define-method "textDocument/formatting" (params))
+
+(define-method "textDocument/rangeFormatting" (params |DocumentRangeFormattingParams|)
+  (with-slots (|textDocument| |range| |options|) params
+    (with-slots (|start| |end|) |range|
+      (with-document-position (start (slot-value |textDocument| '|uri|) |start|)
+        (lem-base:with-point ((end start))
+          (move-to-lsp-position end |end|)
+          (range-formatting start end |options|))))))
+
+(define-method "textDocument/onTypeFormatting" (params |DocumentOnTypeFormattingParams|)
+  (with-slots (|textDocument| |position| |ch| |options|) params
+    (with-document-position (point (slot-value |textDocument| '|uri|) |position|)
+      (on-type-formatting point |ch| |options|))))
 
 (define-method "textDocument/codeLens" (params)
   (vector))
