@@ -7,7 +7,7 @@
            :with-log-stream))
 (in-package :cl-lsp/logger)
 
-(defvar *enable-logger* t)
+(defvar *enable-logger* nil)
 (defvar *logger-stream*)
 
 (defun log-format (string &rest args)
