@@ -2,7 +2,6 @@
   (:use :cl
         :cl-lsp/protocol
         :cl-lsp/protocol-util
-        :cl-lsp/lisp-syntax
         :cl-lsp/logger
         :cl-lsp/slime
         :cl-lsp/swank
@@ -176,7 +175,7 @@
       (let ((buffer (lem-base:make-buffer |uri|
                                           :filename (uri-to-filename |uri|)
                                           :enable-undo-p nil
-                                          :syntax-table *syntax-table*)))
+                                          :syntax-table lem-lisp-syntax.syntax-table:*syntax-table*)))
         (lem-base:insert-string (lem-base:buffer-point buffer) |text|)
         (setf (lem-base:buffer-value buffer 'document)
               (list :languageId |languageId|
