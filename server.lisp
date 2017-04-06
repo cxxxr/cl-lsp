@@ -87,6 +87,22 @@
 (defmacro with-text-document-position ((point) params &body body)
   `(call-with-text-document-position ,params (lambda (,point) ,@body)))
 
+(defun notify-show-message (type message)
+  (jsonrpc:notify-async *server*
+                        "window/showMessage"
+                        (convert-to-hash-table
+                         (make-instance '|ShowMessageParams|
+                                        :|type| type
+                                        :|message| message))))
+
+(defun notify-log-message (type message)
+  (jsonrpc:notify-async *server*
+                        "window/logMessage"
+                        (convert-to-hash-table
+                         (make-instance '|LogMessageParams|
+                                        :|type| type
+                                        :|message| message))))
+
 (defvar *initialize-params* nil)
 
 (defun check-initialized ()
@@ -502,27 +518,6 @@
             )))))))
 
 
-(defun notify-show-message (type message)
-  (jsonrpc:notify-async *server*
-                        "window/showMessage"
-                        (convert-to-hash-table
-                         (make-instance '|ShowMessageParams|
-                                        :|type| type
-                                        :|message| message))))
-
-(defun notify-log-message (type message)
-  (jsonrpc:notify-async *server*
-                        "window/logMessage"
-                        (convert-to-hash-table
-                         (make-instance '|LogMessageParams|
-                                        :|type| type
-                                        :|message| message))))
-
-(defun get-buffer-from-file (file)
-  (dolist (buffer (lem-base:buffer-list))
-    (when (uiop:pathname-equal file (lem-base:buffer-filename buffer))
-      (return buffer))))
-
 (defun eval-string-in-package (string package)
   (let ((*package* package))
     (eval (read-from-string string))))
@@ -545,7 +540,7 @@
               (or (optima:property :source-context _source-context) (and)))
          (let* ((buffer (if buffer-name
                             (lem-base:get-buffer buffer-name)
-                            (get-buffer-from-file file)))
+                            (lem-base:get-file-buffer file)))
                 (point (lem-base:buffer-point buffer)))
            (lem-base:move-to-position point pos)
            (lem-base:skip-chars-backward point #'lem-base:syntax-symbol-char-p)
