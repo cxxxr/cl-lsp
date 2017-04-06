@@ -324,7 +324,7 @@
 (define-method "textDocument/definition" (params |TextDocumentPositionParams|)
   (with-text-document-position (point) params
     (alexandria:when-let ((name (symbol-string-at-point* point)))
-      (alexandria:if-let ((p (search-local-definition point name)))
+      (alexandria:if-let ((p (lem-lisp-syntax.enclosing:search-local-definition point name)))
         (convert-to-hash-table (buffer-location p))
         (list-to-object-or-object[]
          (xref-locations-from-definitions
