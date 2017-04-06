@@ -10,7 +10,7 @@
            :buffer-formatting))
 (in-package :cl-lsp/formatting)
 
-(defun indent-line (p editp)
+(defun indent-line (p &optional editp)
   (unless (lem-base:blank-line-p p)
     (let ((line-number (1- (lem-base:line-number-at-point p)))
           (old-column (lem-base:point-column (lem-base:back-to-indentation p)))
@@ -20,25 +20,23 @@
           (lem-base:line-start p)
           (lem-base:delete-character p old-column)
           (lem-base:insert-character p #\space new-column))
-        (values
-         (convert-to-hash-table
-          (make-instance '|TextEdit|
-                         :|range| (make-instance
-                                   '|Range|
-                                   :|start| (make-instance '|Position|
-                                                           :|line| line-number
-                                                           :|character| 0)
-                                   :|end| (make-instance '|Position|
-                                                         :|line| line-number
-                                                         :|character| old-column))
-                         :|newText| (make-string new-column :initial-element #\space)))
-         new-column)))))
+        (convert-to-hash-table
+         (make-instance '|TextEdit|
+                        :|range| (make-instance
+                                  '|Range|
+                                  :|start| (make-instance '|Position|
+                                                          :|line| line-number
+                                                          :|character| 0)
+                                  :|end| (make-instance '|Position|
+                                                        :|line| line-number
+                                                        :|character| old-column))
+                        :|newText| (make-string new-column :initial-element #\space)))))))
 
 (defun on-type-formatting (point ch options)
   (declare (ignore ch options))
-  (let ((edit (indent-line point nil)))
+  (let ((edit (indent-line point)))
     (if edit
-        (list (indent-line point nil))
+        (list edit)
         (vector))))
 
 (defun range-formatting (start end options)

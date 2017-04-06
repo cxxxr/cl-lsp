@@ -18,6 +18,10 @@
   "contributes": {
     "commands": [
       {
+        "command": "lisp.indentLine",
+        "title": "Lisp: Indent Line"
+      },
+      {
         "command": "lisp.replStart",
         "title": "Lisp: REPL - start"
       },
