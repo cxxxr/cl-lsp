@@ -59,10 +59,8 @@
                                                     `(convert-from-hash-table ',params-type ,params)
                                                     params)))
                                   (declare (ignorable ,params))
-                                  ,(if (string= name "initialize")
-                                       `(progn ,@body)
-                                       `(or (check-initialized)
-                                            (progn ,@body))))))
+                                  (check-initialized ,name)
+                                  ,@body)))
                            (response-log ,_val)
                            ,_val))))))
 
@@ -105,8 +103,9 @@
 
 (defvar *initialize-params* nil)
 
-(defun check-initialized ()
-  (when (null *initialize-params*)
+(defun check-initialized (method-name)
+  (when (and (string/= method-name "initialize")
+             (null *initialize-params*))
     (alexandria:plist-hash-table
      (list "code" -32002
            "message" "did not initialize")
