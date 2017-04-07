@@ -56,7 +56,8 @@
                            (multiple-value-list
                             (eval (read-from-string string))))))))))
         (bt:with-lock-held (*method-lock*)
-          (notify-log-message |MessageType.Log| output-string)
+          (unless (string= "" output-string)
+            (notify-log-message |MessageType.Log| output-string))
           (notify-show-message |MessageType.Info| (format nil "~{~A~^, ~}" results))
           )))))
 
@@ -177,4 +178,8 @@
       nil)))
 
 (define-method "lisp/interrupt" (params)
-  )
+  (when *eval-thread*
+    (bt:interrupt-thread *eval-thread*
+                         (lambda ()
+                           (error "interrupt"))))
+  nil)

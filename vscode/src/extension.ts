@@ -56,6 +56,10 @@ function evalLastSexp() {
 	languageClient.sendNotification("lisp/evalLastSexp", params);
 }
 
+function interrupt() {
+	languageClient.sendNotification("lisp/interrupt", {});
+}
+
 function indentLine() {
 	let params = getTextDocumentPositionParams();
 	languageClient.sendRequest("lisp/indentLine", params);
@@ -83,6 +87,7 @@ export function activate(context: ExtensionContext) {
 	context.subscriptions.push(commands.registerCommand("lisp.indentLine", () => indentLine()));
 	context.subscriptions.push(commands.registerCommand("lisp.compileAndLoadFile", () => compileAndLoadFile()));
 	context.subscriptions.push(commands.registerCommand("lisp.evalLastSexp", () => evalLastSexp()));
+	context.subscriptions.push(commands.registerCommand("lisp.interrupt", () => interrupt()));
 	context.subscriptions.push(commands.registerCommand("lisp.replStart", () => startRepl()));
 	context.subscriptions.push(languageClient.start());
 }
