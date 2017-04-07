@@ -5,7 +5,8 @@
         :cl-lsp/protocol
         :cl-lsp/protocol-util
         :cl-lsp/slime
-        :cl-lsp/swank)
+        :cl-lsp/swank
+        :cl-lsp/gray-streams)
   (:import-from :bordeaux-threads)
   (:import-from :swank)
   (:import-from :optima)
@@ -142,39 +143,41 @@
     (send (lambda () (compile-and-load-file uri))))
   nil)
 
+(defun lsp-output-fn (string)
+  (notify-log-message |MessageType.Log| string))
+
+(defun make-eval-stream ()
+  (let ((out (make-instance 'lsp-output-stream
+                            :output-fn #'lsp-output-fn)))
+    (with-input-from-string (in "")
+      (make-two-way-stream in out))))
+
 (defun eval-string (string package)
   (let ((*package* (ensure-package package))
         results)
-    (let ((output-string
-           (with-output-to-string (out)
-             (with-input-from-string (in "")
-               (let* ((io (make-two-way-stream in out))
-                      (*standard-output* io)
-                      (*error-output* io)
-                      (*standard-input* io)
-                      (*terminal-io* io)
-                      (*standard-output* io)
-                      (*error-output* io)
-                      (*query-io* io)
-                      (*debug-io* io)
-                      (*trace-output* io))
-                 (handler-bind
-                     ((error (lambda (err)
-                               (bt:with-lock-held (*method-lock*)
-                                 (notify-log-message |MessageType.Error|
-                                                     (with-output-to-string (out)
-                                                       (format out "~%~A~%~%" err)
-                                                       (uiop:print-backtrace :stream out)))
-                                 (notify-show-message |MessageType.Error|
-                                                      (princ-to-string err))
-                                 (return-from eval-string)))))
-                   (setf results
-                         (multiple-value-list
-                          (eval (read-from-string string))))))))))
-      (bt:with-lock-held (*method-lock*)
-        (unless (string= "" output-string)
-          (notify-log-message |MessageType.Log| output-string))
-        (notify-show-message |MessageType.Info| (format nil "~{~A~^, ~}" results))))))
+    (let ((eval-stream (make-eval-stream)))
+      (let ((*standard-output* eval-stream)
+            (*error-output* eval-stream)
+            (*standard-input* eval-stream)
+            (*terminal-io* eval-stream)
+            (*query-io* eval-stream)
+            (*debug-io* eval-stream)
+            (*trace-output* eval-stream))
+        (handler-bind
+            ((error (lambda (err)
+                      (finish-output eval-stream)
+                      (notify-log-message |MessageType.Error|
+                                          (with-output-to-string (out)
+                                            (format out "~%~A~%~%" err)
+                                            (uiop:print-backtrace :stream out)))
+                      (notify-show-message |MessageType.Error|
+                                           (princ-to-string err))
+                      (return-from eval-string))))
+          (setf results
+                (multiple-value-list
+                 (eval (read-from-string string))))))
+      (finish-output eval-stream)
+      (notify-show-message |MessageType.Info| (format nil "~{~A~^, ~}" results)))))
 
 (define-method "lisp/evalLastSexp" (params |TextDocumentPositionParams|)
   (with-text-document-position (point) params

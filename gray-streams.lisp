@@ -1,5 +1,6 @@
 (defpackage :cl-lsp/gray-streams
-  (:use :cl :trivial-gray-streams))
+  (:use :cl :trivial-gray-streams)
+  (:export :lsp-output-stream))
 (in-package :cl-lsp/gray-streams)
 
 (defclass lsp-output-stream (fundamental-character-output-stream)
