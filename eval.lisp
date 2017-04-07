@@ -105,35 +105,37 @@
 (defun compile-and-load-file (uri)
   (let ((filename (uri-to-filename uri))
         result)
-    (handler-case (with-output-to-string (*standard-output*)
-                    (setf result (swank-compile-file filename t)))
-      (error (c)
-        (notify-show-message |MessageType.Error|
-                             (princ-to-string c))
-        (setf result nil)))
+    (bt:with-lock-held (*method-lock*)
+      (handler-case (with-output-to-string (*standard-output*)
+                      (setf result (swank-compile-file filename t)))
+        (error (c)
+          (notify-show-message |MessageType.Error|
+                               (princ-to-string c))
+          (setf result nil))))
     (when result
       (destructuring-bind (notes successp duration loadp fastfile)
           (rest result)
-        (notify-show-message |MessageType.Info|
-                             (compilation-message
-                              notes duration successp))
-        (let ((diagnostics (compilation-notes-to-diagnostics notes)))
-          (let ((diagnostics-params
-                 (convert-to-hash-table
-                  (make-instance '|PublishDiagnosticsParams|
-                                 :|uri| uri
-                                 :|diagnostics| diagnostics))))
-            (jsonrpc:notify-async *server*
-                                  "textDocument/publishDiagnostics"
-                                  diagnostics-params)
-            (when (and loadp fastfile successp)
-              (handler-case (let ((output-string
-                                   (with-output-to-string (*standard-output*)
-                                     (load fastfile))))
-                              (notify-log-message |MessageType.Log| output-string))
-                (error (condition)
-                  (notify-show-message |MessageType.Error|
-                                       (princ-to-string condition)))))))))))
+        (bt:with-lock-held (*method-lock*)
+          (notify-show-message |MessageType.Info|
+                               (compilation-message
+                                notes duration successp))
+          (let ((diagnostics (compilation-notes-to-diagnostics notes)))
+            (let ((diagnostics-params
+                   (convert-to-hash-table
+                    (make-instance '|PublishDiagnosticsParams|
+                                   :|uri| uri
+                                   :|diagnostics| diagnostics))))
+              (jsonrpc:notify-async *server*
+                                    "textDocument/publishDiagnostics"
+                                    diagnostics-params)
+              (when (and loadp fastfile successp)
+                (handler-case (let ((output-string
+                                     (with-output-to-string (*standard-output*)
+                                       (load fastfile))))
+                                (notify-log-message |MessageType.Log| output-string))
+                  (error (condition)
+                    (notify-show-message |MessageType.Error|
+                                         (princ-to-string condition))))))))))))
 
 (define-method "lisp/compileAndLoadFile" (params |TextDocumentIdentifier|)
   (let* ((uri (slot-value params '|uri|)))
