@@ -33,34 +33,6 @@
   (or (find-package package)
       (find-package "CL-USER")))
 
-(defun eval-string (string package)
-  (let ((*package* (ensure-package package))
-        results)
-    (with-input-from-string (*standard-input* "")
-      (let ((output-string
-             (with-output-to-string (out)
-               (let ((*standard-output* out)
-                     (*error-output* out))
-                 (with-output-to-string (*error-output*)
-                   (handler-bind
-                       ((error (lambda (err)
-                                 (bt:with-lock-held (*method-lock*)
-                                   (notify-log-message |MessageType.Error|
-                                                       (with-output-to-string (out)
-                                                         (format out "~%~A~%~%" err)
-                                                         (uiop:print-backtrace :stream out)))
-                                   (notify-show-message |MessageType.Error|
-                                                        (princ-to-string err))
-                                   (return-from eval-string)))))
-                     (setf results
-                           (multiple-value-list
-                            (eval (read-from-string string))))))))))
-        (bt:with-lock-held (*method-lock*)
-          (unless (string= "" output-string)
-            (notify-log-message |MessageType.Log| output-string))
-          (notify-show-message |MessageType.Info| (format nil "~{~A~^, ~}" results))
-          )))))
-
 (defun start-eval-thread ()
   (unless *eval-thread*
     (setf *eval-thread*
@@ -68,16 +40,12 @@
            (lambda ()
              (with-error-handle
                (loop :for event := (receive) :do
-                 (destructuring-bind (string package) event
-                   (eval-string string package)))))
+                 (funcall event))))
            :initial-bindings (acons 'jsonrpc/connection:*connection*
                                     jsonrpc/connection:*connection*
                                     nil)))))
 
 (pushnew 'start-eval-thread *initialized-hooks*)
-
-(defun send-eval-string (string package)
-  (send (list string package)))
 
 
 (defun compilation-notes-to-diagnostics (notes)
@@ -134,10 +102,9 @@
     (when secs
       (format nil "[~,2f secs]" secs))))
 
-(define-method "lisp/compileAndLoadFile" (params |TextDocumentIdentifier|)
-  (let* ((uri (slot-value params '|uri|))
-         (filename (uri-to-filename uri))
-         (result))
+(defun compile-and-load-file (uri)
+  (let ((filename (uri-to-filename uri))
+        result)
     (handler-case (with-output-to-string (*standard-output*)
                     (setf result (swank-compile-file filename t)))
       (error (c)
@@ -166,15 +133,53 @@
                               (notify-log-message |MessageType.Log| output-string))
                 (error (condition)
                   (notify-show-message |MessageType.Error|
-                                       (princ-to-string condition))))))))))
+                                       (princ-to-string condition)))))))))))
+
+(define-method "lisp/compileAndLoadFile" (params |TextDocumentIdentifier|)
+  (let* ((uri (slot-value params '|uri|)))
+    (send (lambda () (compile-and-load-file uri))))
   nil)
+
+(defun eval-string (string package)
+  (let ((*package* (ensure-package package))
+        results)
+    (let ((output-string
+           (with-output-to-string (out)
+             (with-input-from-string (in "")
+               (let* ((io (make-two-way-stream in out))
+                      (*standard-output* io)
+                      (*error-output* io)
+                      (*standard-input* io)
+                      (*terminal-io* io)
+                      (*standard-output* io)
+                      (*error-output* io)
+                      (*query-io* io)
+                      (*debug-io* io)
+                      (*trace-output* io))
+                 (handler-bind
+                     ((error (lambda (err)
+                               (bt:with-lock-held (*method-lock*)
+                                 (notify-log-message |MessageType.Error|
+                                                     (with-output-to-string (out)
+                                                       (format out "~%~A~%~%" err)
+                                                       (uiop:print-backtrace :stream out)))
+                                 (notify-show-message |MessageType.Error|
+                                                      (princ-to-string err))
+                                 (return-from eval-string)))))
+                   (setf results
+                         (multiple-value-list
+                          (eval (read-from-string string))))))))))
+      (bt:with-lock-held (*method-lock*)
+        (unless (string= "" output-string)
+          (notify-log-message |MessageType.Log| output-string))
+        (notify-show-message |MessageType.Info| (format nil "~{~A~^, ~}" results))))))
 
 (define-method "lisp/evalLastSexp" (params |TextDocumentPositionParams|)
   (with-text-document-position (point) params
-    (let ((string (last-form-string point))
-          (package (search-buffer-package point)))
+    (let ((string (last-form-string point)))
       (when string
-        (send-eval-string string package))
+        (let ((package (search-buffer-package point)))
+          (send (lambda () (eval-string string package)))))
       nil)))
 
 (define-method "lisp/interrupt" (params)
