@@ -58,7 +58,7 @@
 (defmacro with-error-handle (&body body)
   `(call-with-error-handle (lambda () ,@body)))
 
-(defmacro define-method (name (params &optional params-type) &body body)
+(defmacro define-method (name (params &optional params-type without-lock) &body body)
   (let ((_val (gensym)))
     `(jsonrpc:expose *server*
                      ,name
@@ -71,7 +71,9 @@
                                                     params)))
                                   (declare (ignorable ,params))
                                   (check-initialized ,name)
-                                  (bt:with-lock-held (*method-lock*) ,@body))))
+                                  ,(if without-lock
+                                       `(progn ,@body)
+                                       `(bt:with-lock-held (*method-lock*) ,@body)))))
                            (response-log ,_val)
                            ,_val))))))
 

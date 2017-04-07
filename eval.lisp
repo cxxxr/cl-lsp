@@ -184,7 +184,7 @@
           (send (lambda () (eval-string string package)))))
       nil)))
 
-(define-method "lisp/interrupt" (params)
+(define-method "lisp/interrupt" (params nil t)
   (when *eval-thread*
     (bt:interrupt-thread *eval-thread*
                          (lambda ()
