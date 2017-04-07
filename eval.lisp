@@ -47,9 +47,8 @@
                                  (bt:with-lock-held (*method-lock*)
                                    (notify-log-message |MessageType.Error|
                                                        (with-output-to-string (out)
-                                                         (uiop:print-backtrace
-                                                          :condition err
-                                                          :stream out)))
+                                                         (format out "~%~A~%~%" err)
+                                                         (uiop:print-backtrace :stream out)))
                                    (notify-show-message |MessageType.Error|
                                                         (princ-to-string err))
                                    (return-from eval-string)))))
