@@ -69,7 +69,10 @@
              (with-error-handle
                (loop :for event := (receive) :do
                  (destructuring-bind (string package) event
-                   (eval-string string package)))))))))
+                   (eval-string string package)))))
+           :initial-bindings (acons 'jsonrpc/connection:*connection*
+                                    jsonrpc/connection:*connection*
+                                    nil)))))
 
 (defun send-eval-string (string package)
   (start-eval-thread)
