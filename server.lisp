@@ -15,6 +15,7 @@
   (:import-from :lem-base)
   (:export :*server*
            :*method-lock*
+           :with-error-handle
            :define-method
            :get-buffer-from-uri
            :with-document-position

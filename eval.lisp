@@ -1,5 +1,6 @@
 (defpackage :cl-lsp/eval
   (:use :cl
+        :cl-lsp/logger
         :cl-lsp/server
         :cl-lsp/protocol
         :cl-lsp/protocol-util
@@ -12,7 +13,7 @@
   (:import-from :jsonrpc))
 (in-package :cl-lsp/eval)
 
-(defvar *eval-thread*)
+(defvar *eval-thread* nil)
 
 (let ((wait (bt:make-condition-variable))
       (lock (bt:make-lock))
@@ -33,31 +34,45 @@
       (find-package "CL-USER")))
 
 (defun eval-string (string package)
-  (handler-bind
-      ((error (lambda (err)
-                (return-from eval-string
-                  (values (with-output-to-string (out)
-                            (uiop:print-backtrace err :stream out))
-                          t)))))
-    (let ((*package* (ensure-package package)))
-      (with-input-from-string (*standard-input* "")
-        (with-output-to-string (out)
-          (let ((*standard-output* out)
-                (*error-output* out))
-            (with-output-to-string (*error-output*)
-              (multiple-value-list
-               (eval (read-from-string string))))))))))
+  (let ((*package* (ensure-package package))
+        results)
+    (with-input-from-string (*standard-input* "")
+      (let ((output-string
+             (with-output-to-string (out)
+               (let ((*standard-output* out)
+                     (*error-output* out))
+                 (with-output-to-string (*error-output*)
+                   (handler-bind
+                       ((error (lambda (err)
+                                 (bt:with-lock-held (*method-lock*)
+                                   (notify-log-message |MessageType.Error|
+                                                       (with-output-to-string (out)
+                                                         (uiop:print-backtrace
+                                                          :condition err
+                                                          :stream out)))
+                                   (notify-show-message |MessageType.Error|
+                                                        (princ-to-string err))
+                                   (return-from eval-string)))))
+                     (setf results
+                           (multiple-value-list
+                            (eval (read-from-string string))))))))))
+        (bt:with-lock-held (*method-lock*)
+          (notify-log-message |MessageType.Log| output-string)
+          (notify-show-message |MessageType.Info| (format nil "~{~A~^, ~}" results))
+          )))))
 
 (defun start-eval-thread ()
   (unless *eval-thread*
     (setf *eval-thread*
           (bt:make-thread
            (lambda ()
-             (loop :for event := (receive) :do
-               (destructuring-bind (string package) event
-                 (eval-string string package))))))))
+             (with-error-handle
+               (loop :for event := (receive) :do
+                 (destructuring-bind (string package) event
+                   (eval-string string package)))))))))
 
-(defun notify-eval-string (string package)
+(defun send-eval-string (string package)
+  (start-eval-thread)
   (send (list string package)))
 
 
@@ -150,37 +165,12 @@
                                        (princ-to-string condition))))))))))
   nil)
 
-(defun eval-string-in-package (string package)
-  (let ((*package* package))
-    (eval (read-from-string string))))
-
 (define-method "lisp/evalLastSexp" (params |TextDocumentPositionParams|)
   (with-text-document-position (point) params
     (let ((string (last-form-string point))
-          (package (search-buffer-package point))
-          (result)
-          (error))
+          (package (search-buffer-package point)))
       (when string
-        (let ((output-string
-               (with-output-to-string (*standard-output*)
-                 (setf error
-                       (nth-value
-                        1
-                        (ignore-errors
-                         (handler-bind ((error (lambda (c)
-                                                 (format t "~A~%~%" c)
-                                                 (uiop:print-backtrace
-                                                  :condition c
-                                                  :stream *standard-output*))))
-                           (setf result
-                                 (format nil "~{~A~^, ~}"
-                                         (multiple-value-list
-                                          (eval-string-in-package string package)))))))))))
-          (unless (string= output-string "")
-            (notify-log-message |MessageType.Log| output-string))
-          (if error
-              (notify-show-message |MessageType.Error| (princ-to-string error))
-              (notify-show-message |MessageType.Info| result))))
+        (send-eval-string string package))
       nil)))
 
 (define-method "lisp/interrupt" (params)
