@@ -32,6 +32,10 @@
       {
         "command": "lisp.evalLastSexp",
         "title": "Lisp: Evaluate Sexp before position"
+      },
+      {
+        "command": "lisp.interrupt",
+        "title": "Lisp: Interrupt"
       }
     ],
     "configuration": {

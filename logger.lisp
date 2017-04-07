@@ -1,5 +1,6 @@
 (defpackage :cl-lsp/logger
   (:use :cl)
+  (:import-from :bordeaux-threads)
   (:export :*enable-logger*
            :*logger-stream*
            :log-format
@@ -10,10 +11,12 @@
 (defvar *enable-logger* nil)
 (defvar *logger-stream*)
 
-(defun log-format (string &rest args)
-  (when (boundp '*logger-stream*)
-    (apply #'format *logger-stream* string args)
-    (force-output *logger-stream*)))
+(let ((lock (bt:make-lock)))
+  (defun log-format (string &rest args)
+    (bt:with-lock-held (lock)
+      (when (boundp '*logger-stream*)
+        (apply #'format *logger-stream* string args)
+        (force-output *logger-stream*)))))
 
 (defun call-with-log-file (file function)
   (if *enable-logger*
