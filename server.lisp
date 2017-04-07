@@ -15,6 +15,7 @@
   (:import-from :lem-base)
   (:export :*server*
            :*method-lock*
+           :*initialized-hooks*
            :with-error-handle
            :define-method
            :get-buffer-from-uri
@@ -26,6 +27,7 @@
 
 (defvar *server* (jsonrpc:make-server))
 (defvar *method-lock* (bt:make-lock))
+(defvar *initialized-hooks* '())
 
 (defvar *request-log* t)
 (defvar *response-log* t)
@@ -124,7 +126,6 @@
 
 (define-method "initialize" (params |InitializeParams|)
   (setf *initialize-params* params)
-  (swank-init)
   (convert-to-hash-table
    (make-instance
     '|InitializeResult|
@@ -170,6 +171,8 @@
      :|experimental| nil))))
 
 (define-method "initialized" (params)
+  (swank-init)
+  (mapc #'funcall *initialized-hooks*)
   nil)
 
 (define-method "shutdown" (params)

@@ -73,8 +73,9 @@
                                     jsonrpc/connection:*connection*
                                     nil)))))
 
+(pushnew 'start-eval-thread *initialized-hooks*)
+
 (defun send-eval-string (string package)
-  (start-eval-thread)
   (send (list string package)))
 
 
