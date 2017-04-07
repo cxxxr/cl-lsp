@@ -13,10 +13,18 @@
   (:import-from :alexandria)
   (:import-from :optima)
   (:import-from :lem-base)
-  (:export :*server*))
+  (:export :*server*
+           :*method-lock*
+           :define-method
+           :get-buffer-from-uri
+           :with-document-position
+           :with-text-document-position
+           :notify-show-message
+           :notify-log-message))
 (in-package :cl-lsp/server)
 
 (defvar *server* (jsonrpc:make-server))
+(defvar *method-lock* (bt:make-lock))
 
 (defvar *request-log* t)
 (defvar *response-log* t)
@@ -60,7 +68,7 @@
                                                     params)))
                                   (declare (ignorable ,params))
                                   (check-initialized ,name)
-                                  ,@body)))
+                                  (bt:with-lock-held (*method-lock*) ,@body))))
                            (response-log ,_val)
                            ,_val))))))
 
@@ -515,126 +523,3 @@
             ;;                                       :|uri| uri)
             ;;                      :|edits| edits))
             )))))))
-
-
-(defun eval-string-in-package (string package)
-  (let ((*package* package))
-    (eval (read-from-string string))))
-
-(defun compilation-notes-to-diagnostics (notes)
-  (let ((diagnostics '()))
-    (dolist (note notes)
-      (optima:match note
-        ((and (optima:property :location
-                               (or (list :location
-                                         (list :buffer buffer-name)
-                                         (list :offset pos _)
-                                         _)
-                                   (list :location
-                                         (list :file file)
-                                         (list :position pos)
-                                         _)))
-              (or (optima:property :message message) (and))
-              (or (optima:property :severity severity) (and))
-              (or (optima:property :source-context _source-context) (and)))
-         (let* ((buffer (if buffer-name
-                            (lem-base:get-buffer buffer-name)
-                            (lem-base:get-file-buffer file)))
-                (point (lem-base:buffer-point buffer)))
-           (lem-base:move-to-position point pos)
-           (lem-base:skip-chars-backward point #'lem-base:syntax-symbol-char-p)
-           (lem-base:with-point ((end point))
-             (unless (lem-base:form-offset end 1)
-               (when (eq severity :read-error)
-                 (lem-base:buffer-start point))
-               (lem-base:buffer-end end))
-             (push (make-instance '|Diagnostic|
-                                  :|range| (make-lsp-range point end)
-                                  :|severity| (case severity
-                                                ((:error :read-error)
-                                                 |DiagnosticSeverity.Error|)
-                                                ((:warning :style-warning)
-                                                 |DiagnosticSeverity.Warning|)
-                                                ((:note :redefinition)
-                                                 |DiagnosticSeverity.Information|))
-                                  ;; :|code|
-                                  ;; :|source|
-                                  :|message| message)
-                   diagnostics))))))
-    (list-to-object[] diagnostics)))
-
-(defun compilation-message (notes secs successp)
-  (with-output-to-string (out)
-    (if successp
-        (princ "Compilation finished" out)
-        (princ "Compilation failed" out))
-    (princ (if (null notes)
-               ". (No warnings)"
-               ". ")
-           out)
-    (when secs
-      (format nil "[~,2f secs]" secs))))
-
-(define-method "lisp/compileAndLoadFile" (params |TextDocumentIdentifier|)
-  (let* ((uri (slot-value params '|uri|))
-         (filename (uri-to-filename uri))
-         (result))
-    (handler-case (with-output-to-string (*standard-output*)
-                    (setf result (swank-compile-file filename t)))
-      (error (c)
-        (notify-show-message |MessageType.Error|
-                             (princ-to-string c))
-        (setf result nil)))
-    (when result
-      (destructuring-bind (notes successp duration loadp fastfile)
-          (rest result)
-        (notify-show-message |MessageType.Info|
-                             (compilation-message
-                              notes duration successp))
-        (let ((diagnostics (compilation-notes-to-diagnostics notes)))
-          (let ((diagnostics-params
-                 (convert-to-hash-table
-                  (make-instance '|PublishDiagnosticsParams|
-                                 :|uri| uri
-                                 :|diagnostics| diagnostics))))
-            (jsonrpc:notify-async *server*
-                                  "textDocument/publishDiagnostics"
-                                  diagnostics-params)
-            (when (and loadp fastfile successp)
-              (handler-case (let ((output-string
-                                   (with-output-to-string (*standard-output*)
-                                     (load fastfile))))
-                              (notify-log-message |MessageType.Log| output-string))
-                (error (condition)
-                  (notify-show-message |MessageType.Error|
-                                       (princ-to-string condition))))))))))
-  nil)
-
-(define-method "lisp/evalLastSexp" (params |TextDocumentPositionParams|)
-  (with-text-document-position (point) params
-    (let ((string (last-form-string point))
-          (package (search-buffer-package point))
-          (result)
-          (error))
-      (when string
-        (let ((output-string
-               (with-output-to-string (*standard-output*)
-                 (setf error
-                       (nth-value
-                        1
-                        (ignore-errors
-                         (handler-bind ((error (lambda (c)
-                                                 (format t "~A~%~%" c)
-                                                 (uiop:print-backtrace
-                                                  :condition c
-                                                  :stream *standard-output*))))
-                           (setf result
-                                 (format nil "~{~A~^, ~}"
-                                         (multiple-value-list
-                                          (eval-string-in-package string package)))))))))))
-          (unless (string= output-string "")
-            (notify-log-message |MessageType.Log| output-string))
-          (if error
-              (notify-show-message |MessageType.Error| (princ-to-string error))
-              (notify-show-message |MessageType.Info| result))))
-      nil)))

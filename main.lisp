@@ -1,7 +1,8 @@
 (defpackage :cl-lsp/main
   (:use :cl
         :cl-lsp/server
-        :cl-lsp/logger)
+        :cl-lsp/logger
+        :cl-lsp/eval)
   (:export :run-tcp-mode
            :run-stdio-mode))
 (in-package :cl-lsp/main)
