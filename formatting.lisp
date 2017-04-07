@@ -13,12 +13,12 @@
 (defun indent-line (p &optional editp)
   (unless (lem-base:blank-line-p p)
     (let ((line-number (1- (lem-base:line-number-at-point p)))
-          (old-column (lem-base:point-column (lem-base:back-to-indentation p)))
-          (new-column (lem-lisp-syntax.indent:calc-indent p)))
+          (old-charpos (lem-base:point-charpos (lem-base:back-to-indentation p)))
+          (new-column (lem-lisp-syntax.indent:calc-indent (lem-base:copy-point p :temporary))))
       (when new-column
         (when editp
           (lem-base:line-start p)
-          (lem-base:delete-character p old-column)
+          (lem-base:delete-character p old-charpos)
           (lem-base:insert-character p #\space new-column))
         (convert-to-hash-table
          (make-instance '|TextEdit|
@@ -29,18 +29,22 @@
                                                           :|character| 0)
                                   :|end| (make-instance '|Position|
                                                         :|line| line-number
-                                                        :|character| old-column))
+                                                        :|character| old-charpos))
                         :|newText| (make-string new-column :initial-element #\space)))))))
 
+(defun set-formatting-options (options)
+  (setf (lem-base:tab-size) (slot-value options '|tabSize|)))
+
 (defun on-type-formatting (point ch options)
-  (declare (ignore ch options))
+  (declare (ignore ch))
+  (set-formatting-options options)
   (let ((edit (indent-line point)))
     (if edit
         (list edit)
         (vector))))
 
 (defun range-formatting (start end options)
-  (declare (ignore options))
+  (set-formatting-options options)
   (let ((buffer (lem-base:point-buffer start))
         (edits '()))
     (lem-base:buffer-enable-undo buffer)
