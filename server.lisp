@@ -94,6 +94,7 @@
   `(call-with-text-document-position ,params (lambda (,point) ,@body)))
 
 (defun notify-show-message (type message)
+  (log-format "window/showMessage: ~A ~A~%" type message)
   (jsonrpc:notify-async *server*
                         "window/showMessage"
                         (convert-to-hash-table
@@ -102,6 +103,7 @@
                                         :|message| message))))
 
 (defun notify-log-message (type message)
+  (log-format "window/logMessage: ~A ~A~%" type message)
   (jsonrpc:notify-async *server*
                         "window/logMessage"
                         (convert-to-hash-table
