@@ -5,9 +5,6 @@
   (:export :symbol-string-at-point*
            :beginning-of-defun-point
            :beginning-of-defun
-           :top-of-defun
-           :top-of-defun-string
-           :last-form-string
            :map-buffer-symbols
            :search-buffer-package))
 (in-package :cl-lsp/slime)
@@ -38,20 +35,6 @@
 
 (defun beginning-of-defun (point n)
   (move-point point (beginning-of-defun-point point n)))
-
-(defun top-of-defun (point)
-  (beginning-of-defun (line-end point) -1))
-
-(defun top-of-defun-string (point)
-  (top-of-defun point)
-  (with-point ((p point))
-    (form-offset p 1)
-    (points-to-string point p)))
-
-(defun last-form-string (point)
-  (with-point ((start point))
-    (when (form-offset start -1)
-      (points-to-string start point))))
 
 (defun map-buffer-symbols (buffer function)
   (with-point ((p (buffer-start-point buffer)))
