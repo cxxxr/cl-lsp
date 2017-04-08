@@ -145,46 +145,65 @@
 (defun lsp-output-fn (string)
   (notify-log-message |MessageType.Log| string))
 
-(defun make-eval-stream ()
-  (let ((out (make-instance 'lsp-output-stream
-                            :output-fn #'lsp-output-fn)))
-    (with-input-from-string (in "")
-      (make-two-way-stream in out))))
-
 (defun eval-string (string package)
   (let ((*package* (ensure-package package))
         results)
-    (let ((eval-stream (make-eval-stream)))
-      (let ((*standard-output* eval-stream)
-            (*error-output* eval-stream)
-            (*standard-input* eval-stream)
-            (*terminal-io* eval-stream)
-            (*query-io* eval-stream)
-            (*debug-io* eval-stream)
-            (*trace-output* eval-stream))
-        (handler-bind
-            ((error (lambda (err)
-                      (finish-output eval-stream)
-                      (notify-log-message |MessageType.Error|
-                                          (with-output-to-string (out)
-                                            (format out "~%~A~%~%" err)
-                                            (uiop:print-backtrace :stream out)))
-                      (notify-show-message |MessageType.Error|
-                                           (princ-to-string err))
-                      (return-from eval-string))))
-          (setf results
-                (multiple-value-list
-                 (eval (read-from-string string))))))
-      (finish-output eval-stream)
-      (notify-show-message |MessageType.Info| (format nil "~{~A~^, ~}" results)))))
+    (let ((_out (make-instance 'lsp-output-stream :output-fn #'lsp-output-fn)))
+      (with-input-from-string (_in "")
+        (with-open-stream (eval-stream (make-two-way-stream _in _out))
+          (let ((*standard-output* eval-stream)
+                (*error-output* eval-stream)
+                (*standard-input* eval-stream)
+                (*terminal-io* eval-stream)
+                (*query-io* eval-stream)
+                (*debug-io* eval-stream)
+                (*trace-output* eval-stream))
+            (handler-bind
+                ((error (lambda (err)
+                          (finish-output eval-stream)
+                          (notify-log-message |MessageType.Error|
+                                              (with-output-to-string (out)
+                                                (format out "~%~A~%~%" err)
+                                                (uiop:print-backtrace :stream out)))
+                          (notify-show-message |MessageType.Error|
+                                               (princ-to-string err))
+                          (return-from eval-string))))
+              (setf results
+                    (multiple-value-list
+                     (eval (read-from-string string))))))
+          (finish-output eval-stream)
+          (notify-show-message |MessageType.Info| (format nil "~{~A~^, ~}" results)))))))
 
-(define-method "lisp/evalLastSexp" (params |TextDocumentPositionParams|)
+(defun send-eval-string (string package)
+  (send (lambda () (eval-string string package))))
+
+(defun form-string (point)
+  (if (and (lem-base:start-line-p point)
+           (eql #\( (lem-base:character-at point)))
+      (lem-base:with-point ((p point))
+        (when (lem-base:form-offset p 1)
+          (lem-base:points-to-string point p)))
+      (lem-base:with-point ((p point))
+        (when (lem-base:form-offset p -1)
+          (lem-base:points-to-string p point)))))
+
+(define-method "lisp/eval" (params |TextDocumentPositionParams|)
   (with-text-document-position (point) params
-    (let ((string (last-form-string point)))
+    (let ((string (form-string point)))
       (when string
         (let ((package (search-buffer-package point)))
-          (send (lambda () (eval-string string package)))))
+          (send-eval-string string package)))
       nil)))
+
+(define-method "lisp/rangeEval" (params)
+  (let* ((uri (gethash "uri" (gethash "textDocument" params)))
+         (range (convert-from-hash-table '|Range| (gethash "range" params))))
+    (with-slots (|start| |end|) range
+      (with-document-position (start uri |start|)
+        (lem-base:with-point ((end start))
+          (move-to-lsp-position end |end|)
+          (send-eval-string (lem-base:points-to-string start end)
+                            (search-buffer-package start)))))))
 
 (define-method "lisp/interrupt" (params nil t)
   (when *eval-thread*
