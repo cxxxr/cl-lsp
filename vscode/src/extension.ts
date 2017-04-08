@@ -76,10 +76,20 @@ export function activate(context: ExtensionContext) {
 	}
 
 	languageClient = new LanguageClient("Common Lisp Language Server", serverOptions, clientOptions);
+	languageClient.onReady().then(function (x) {
+		languageClient.onNotification("lisp/evalBegin", function (f) {
+			window.setStatusBarMessage("Evaluating...");
+		})
+		languageClient.onNotification("lisp/evalEnd", function (f) {
+			window.setStatusBarMessage("Done");
+		})
+	})
+
+	context.subscriptions.push(languageClient.start());
+
 	context.subscriptions.push(commands.registerCommand("lisp.indentLine", () => indentLine()));
 	context.subscriptions.push(commands.registerCommand("lisp.compileAndLoadFile", () => compileAndLoadFile()));
 	context.subscriptions.push(commands.registerCommand("lisp.eval", () => evaluate()));
 	context.subscriptions.push(commands.registerCommand("lisp.interrupt", () => interrupt()));
 	context.subscriptions.push(commands.registerCommand("lisp.replStart", () => startRepl()));
-	context.subscriptions.push(languageClient.start());
 }

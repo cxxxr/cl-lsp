@@ -48,6 +48,12 @@
 
 (pushnew 'start-eval-thread *initialized-hooks*)
 
+(defun send-eval (function)
+  (jsonrpc:notify-async *server* "lisp/evalBegin" nil)
+  (send (lambda ()
+          (funcall function)
+          (jsonrpc:notify-async *server* "lisp/evalEnd" nil))))
+
 
 (defun compilation-notes-to-diagnostics (notes)
   (bt:with-lock-held (*method-lock*)
@@ -139,7 +145,7 @@
 
 (define-method "lisp/compileAndLoadFile" (params |TextDocumentIdentifier|)
   (let* ((uri (slot-value params '|uri|)))
-    (send (lambda () (compile-and-load-file uri))))
+    (send-eval (lambda () (compile-and-load-file uri))))
   nil)
 
 (defun lsp-output-fn (string)
@@ -175,7 +181,7 @@
           (notify-show-message |MessageType.Info| (format nil "~{~A~^, ~}" results)))))))
 
 (defun send-eval-string (string package)
-  (send (lambda () (eval-string string package))))
+  (send-eval (lambda () (eval-string string package))))
 
 (defun form-string (point)
   (if (and (lem-base:start-line-p point)
