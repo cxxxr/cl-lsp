@@ -18,16 +18,6 @@ import {
 let languageClient: LanguageClient;
 
 function startRepl() {
-	//let outputChannel = window.createOutputChannel("repl");
-	//outputChannel.show(true);
-	// let option: InputBoxOptions = {
-	// 	ignoreFocusOut: false,
-	// 	password: false,
-	// 	prompt: "Eval",
-	// }
-	// window.showInputBox(option);
-
-	console.log(window.activeTextEditor.selection.active);
 }
 
 function getTextDocumentIdentifier() {
@@ -43,17 +33,21 @@ function compileAndLoadFile() {
 	languageClient.sendNotification("lisp/compileAndLoadFile", params);
 }
 
-function getTextDocumentPositionParams() : TextDocumentPositionParams {
-	let params: TextDocumentPositionParams = {
-		textDocument: getTextDocumentIdentifier(),
-		position: window.activeTextEditor.selection.active
+function evaluate() {
+	let selection = window.activeTextEditor.selection;
+	if (selection.isEmpty) {
+		let params: TextDocumentPositionParams = {
+			textDocument: getTextDocumentIdentifier(),
+			position: selection.active
+		}
+		languageClient.sendNotification("lisp/eval", params);
+	} else {
+		let params = {
+			textDocument: getTextDocumentIdentifier(),
+			range: selection
+		}
+		languageClient.sendNotification("lisp/rangeEval", params);
 	}
-	return params;
-}
-
-function evalLastSexp() {
-	let params = getTextDocumentPositionParams();
-	languageClient.sendNotification("lisp/evalLastSexp", params);
 }
 
 function interrupt() {
@@ -61,8 +55,6 @@ function interrupt() {
 }
 
 function indentLine() {
-	let params = getTextDocumentPositionParams();
-	languageClient.sendRequest("lisp/indentLine", params);
 }
 
 export function activate(context: ExtensionContext) {
@@ -86,7 +78,7 @@ export function activate(context: ExtensionContext) {
 	languageClient = new LanguageClient("Common Lisp Language Server", serverOptions, clientOptions);
 	context.subscriptions.push(commands.registerCommand("lisp.indentLine", () => indentLine()));
 	context.subscriptions.push(commands.registerCommand("lisp.compileAndLoadFile", () => compileAndLoadFile()));
-	context.subscriptions.push(commands.registerCommand("lisp.evalLastSexp", () => evalLastSexp()));
+	context.subscriptions.push(commands.registerCommand("lisp.eval", () => evaluate()));
 	context.subscriptions.push(commands.registerCommand("lisp.interrupt", () => interrupt()));
 	context.subscriptions.push(commands.registerCommand("lisp.replStart", () => startRepl()));
 	context.subscriptions.push(languageClient.start());

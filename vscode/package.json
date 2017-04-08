@@ -30,12 +30,23 @@
         "title": "Lisp: Compile And Load File"
       },
       {
-        "command": "lisp.evalLastSexp",
-        "title": "Lisp: Evaluate Sexp before position"
+        "command": "lisp.eval",
+        "title": "Lisp: Evaluate",
+        "when": "editorTextFocus"
       },
       {
         "command": "lisp.interrupt",
         "title": "Lisp: Interrupt"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "lisp.eval",
+        "key": "shift+enter"
+      },
+      {
+        "command": "lisp.interrupt",
+        "key": "f6"
       }
     ],
     "configuration": {
