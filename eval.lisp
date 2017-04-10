@@ -41,10 +41,7 @@
            (lambda ()
              (with-error-handle
                (loop :for event := (receive) :do
-                 (funcall event))))
-           :initial-bindings (acons 'jsonrpc/connection:*connection*
-                                    jsonrpc/connection:*connection*
-                                    nil)))))
+                 (funcall event))))))))
 
 (pushnew 'start-eval-thread *initialized-hooks*)
 
