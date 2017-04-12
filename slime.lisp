@@ -1,8 +1,6 @@
 (defpackage :cl-lsp/slime
   (:use :cl
-        :lem-base)
-  (:import-from :cl-ppcre)
-  (:import-from :optima)
+        :cl-lsp.lem-base)
   (:export :symbol-string-at-point*
            :beginning-of-defun-point
            :beginning-of-defun

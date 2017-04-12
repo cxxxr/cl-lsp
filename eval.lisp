@@ -7,12 +7,9 @@
         :cl-lsp/slime
         :cl-lsp/swank
         :cl-lsp/gray-streams)
-  (:import-from :lem-base
+  (:import-from :cl-lsp.lem-base
                 :with-point
-                :points-to-string)
-  (:import-from :bordeaux-threads)
-  (:import-from :swank)
-  (:import-from :jsonrpc))
+                :points-to-string))
 (in-package :cl-lsp/eval)
 
 (defvar *eval-thread* nil)

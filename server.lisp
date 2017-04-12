@@ -6,17 +6,11 @@
         :cl-lsp/slime
         :cl-lsp/swank
         :cl-lsp/formatting
-        :lem-base)
-  (:import-from :lem-lisp-syntax.syntax-table
+        :cl-lsp.lem-base)
+  (:import-from :cl-lsp.lem-lisp-syntax.syntax-table
                 :*syntax-table*)
-  (:import-from :lem-lisp-syntax.enclosing
+  (:import-from :cl-lsp.lem-lisp-syntax.enclosing
                 :search-local-definition)
-  (:import-from :cl-ppcre)
-  (:import-from :jsonrpc)
-  (:import-from :yason)
-  (:import-from :uiop)
-  (:import-from :alexandria)
-  (:import-from :optima)
   (:export :*server*
            :*method-lock*
            :*initialized-hooks*

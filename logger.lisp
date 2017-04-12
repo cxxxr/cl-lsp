@@ -1,6 +1,5 @@
 (defpackage :cl-lsp/logger
   (:use :cl)
-  (:import-from :bordeaux-threads)
   (:export :*enable-logger*
            :*logger-stream*
            :log-format

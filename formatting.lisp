@@ -3,10 +3,9 @@
         :cl-lsp/protocol
         :cl-lsp/protocol-util
         :cl-lsp/logger
-        :lem-base)
-  (:import-from :lem-lisp-syntax.indent
+        :cl-lsp.lem-base)
+  (:import-from :cl-lsp.lem-lisp-syntax.indent
                 :calc-indent)
-  (:import-from :alexandria)
   (:export :on-type-formatting
            :range-formatting
            :buffer-formatting))

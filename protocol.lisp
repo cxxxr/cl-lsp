@@ -1,8 +1,5 @@
 (defpackage :cl-lsp/protocol
   (:use :cl)
-  (:import-from :alexandria)
-  (:import-from :trivial-types)
-  (:import-from :closer-mop)
   (:export :convert-from-hash-table
            :convert-to-hash-table))
 (in-package :cl-lsp/protocol)

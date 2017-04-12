@@ -1,6 +1,5 @@
 (defpackage :cl-lsp/swank
   (:use :cl)
-  (:import-from :swank)
   (:export :swank-init
            :fuzzy-completions
            :describe-symbol
