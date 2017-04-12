@@ -2,11 +2,14 @@
   (:use :cl
         :lem-base)
   (:import-from :cl-ppcre)
+  (:import-from :optima)
   (:export :symbol-string-at-point*
            :beginning-of-defun-point
            :beginning-of-defun
+           :form-string
            :map-buffer-symbols
-           :search-buffer-package))
+           :search-buffer-package
+           :compilation-notes))
 (in-package :cl-lsp/slime)
 
 (defun symbol-string-at-point* (point)
@@ -35,6 +38,16 @@
 
 (defun beginning-of-defun (point n)
   (move-point point (beginning-of-defun-point point n)))
+
+(defun form-string (point)
+  (if (and (start-line-p point)
+           (eql #\( (character-at point)))
+      (with-point ((p point))
+        (when (form-offset p 1)
+          (points-to-string point p)))
+      (with-point ((p point))
+        (when (form-offset p -1)
+          (points-to-string p point)))))
 
 (defun map-buffer-symbols (buffer function)
   (with-point ((p (buffer-start-point buffer)))
@@ -71,3 +84,31 @@
                         (error ()
                           (find-package "CL-USER"))))))
         (find-package "CL-USER"))))
+
+(defun compilation-notes (notes function)
+  (dolist (note notes)
+    (optima:match note
+      ((and (optima:property :location
+                             (or (list :location
+                                       (list :buffer buffer-name)
+                                       (list :offset pos _)
+                                       _)
+                                 (list :location
+                                       (list :file file)
+                                       (list :position pos)
+                                       _)))
+            (or (optima:property :message message) (and))
+            (or (optima:property :severity severity) (and))
+            (or (optima:property :source-context _source-context) (and)))
+       (let* ((buffer (if buffer-name
+                          (lem-base:get-buffer buffer-name)
+                          (lem-base:get-file-buffer file)))
+              (point (lem-base:buffer-point buffer)))
+         (lem-base:move-to-position point pos)
+         (lem-base:skip-chars-backward point #'lem-base:syntax-symbol-char-p)
+         (lem-base:with-point ((end point))
+           (unless (lem-base:form-offset end 1)
+             (when (eq severity :read-error)
+               (lem-base:buffer-start point))
+             (lem-base:buffer-end end))
+           (funcall function point end severity message)))))))
