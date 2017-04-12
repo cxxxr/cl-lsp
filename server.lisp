@@ -5,14 +5,18 @@
         :cl-lsp/logger
         :cl-lsp/slime
         :cl-lsp/swank
-        :cl-lsp/formatting)
+        :cl-lsp/formatting
+        :lem-base)
+  (:import-from :lem-lisp-syntax.syntax-table
+                :*syntax-table*)
+  (:import-from :lem-lisp-syntax.enclosing
+                :search-local-definition)
   (:import-from :cl-ppcre)
   (:import-from :jsonrpc)
   (:import-from :yason)
   (:import-from :uiop)
   (:import-from :alexandria)
   (:import-from :optima)
-  (:import-from :lem-base)
   (:export :*server*
            :*method-lock*
            :*initialized-hooks*
@@ -78,12 +82,12 @@
                            ,_val))))))
 
 (defun get-buffer-from-uri (uri)
-  (lem-base:get-buffer uri))
+  (get-buffer uri))
 
 (defun call-with-document-position (uri position function)
   (let ((buffer (get-buffer-from-uri uri)))
-    (assert (lem-base:bufferp buffer))
-    (let ((point (lem-base:buffer-point buffer)))
+    (assert (bufferp buffer))
+    (let ((point (buffer-point buffer)))
       (move-to-lsp-position point position)
       (funcall function point))))
 
@@ -203,12 +207,12 @@
                      '|textDocument|)))
     (with-slots (|uri| |languageId| |version| |text|)
         text-document
-      (let ((buffer (lem-base:make-buffer |uri|
-                                          :filename (uri-to-filename |uri|)
-                                          :enable-undo-p nil
-                                          :syntax-table lem-lisp-syntax.syntax-table:*syntax-table*)))
-        (lem-base:insert-string (lem-base:buffer-point buffer) |text|)
-        (setf (lem-base:buffer-value buffer 'document)
+      (let ((buffer (make-buffer |uri|
+                                 :filename (uri-to-filename |uri|)
+                                 :enable-undo-p nil
+                                 :syntax-table *syntax-table*)))
+        (insert-string (buffer-point buffer) |text|)
+        (setf (buffer-value buffer 'document)
               (list :languageId |languageId|
                     :version |version|)))))
   (values))
@@ -216,19 +220,19 @@
 (define-method "textDocument/didChange" (params |DidChangeTextDocumentParams|)
   (let ((text-document (slot-value params '|textDocument|))
         (content-changes (slot-value params '|contentChanges|)))
-    (let* ((buffer (lem-base:get-buffer (slot-value text-document '|uri|)))
-           (point (lem-base:buffer-point buffer)))
+    (let* ((buffer (get-buffer (slot-value text-document '|uri|)))
+           (point (buffer-point buffer)))
       (dolist (content-change content-changes)
         (with-slots (|range| |rangeLength| |text|)
             content-change
           (cond ((or (null |range|) (null |rangeLength|))
-                 (lem-base:erase-buffer buffer)
-                 (lem-base:insert-string point |text|))
+                 (erase-buffer buffer)
+                 (insert-string point |text|))
                 (t
                  (with-slots (|start|) |range|
                    (move-to-lsp-position point |start|)
-                   (lem-base:delete-character point |rangeLength|)
-                   (lem-base:insert-string point |text|)))))))))
+                   (delete-character point |rangeLength|)
+                   (insert-string point |text|)))))))))
 
 (define-method "textDocument/willSave" (params)
   )
@@ -244,10 +248,10 @@
          (uri
           (slot-value text-document '|uri|))
          (buffer
-          (lem-base:get-buffer uri)))
+          (get-buffer uri)))
     (when text
-      (lem-base:erase-buffer buffer)
-      (lem-base:insert-string (lem-base:buffer-point buffer) text)))
+      (erase-buffer buffer)
+      (insert-string (buffer-point buffer) text)))
   (values))
 
 (define-method "textDocument/didClose" (params |DidCloseTextDocumentParams|)
@@ -256,19 +260,19 @@
          (uri
           (slot-value text-document '|uri|))
          (buffer
-          (lem-base:get-buffer uri)))
-    (lem-base:delete-buffer buffer))
+          (get-buffer uri)))
+    (delete-buffer buffer))
   (values))
 
 (define-method "textDocument/completion" (params |TextDocumentPositionParams|)
   (with-text-document-position (point) params
-    (lem-base:with-point ((start point)
-                          (end point))
-      (lem-base:skip-symbol-backward start)
-      (lem-base:skip-symbol-forward end)
+    (with-point ((start point)
+                 (end point))
+      (skip-symbol-backward start)
+      (skip-symbol-forward end)
       (let ((result
              (fuzzy-completions
-              (lem-base:points-to-string start end)
+              (points-to-string start end)
               (search-buffer-package point))))
         (when result
           (destructuring-bind (completions timeout) result
@@ -305,10 +309,10 @@
                              (search-buffer-package point))))
       (convert-to-hash-table
        (if describe-string
-           (lem-base:with-point ((start point)
-                                 (end point))
-             (lem-base:skip-chars-backward start #'lem-base:syntax-symbol-char-p)
-             (lem-base:skip-chars-forward end #'lem-base:syntax-symbol-char-p)
+           (with-point ((start point)
+                        (end point))
+             (skip-chars-backward start #'syntax-symbol-char-p)
+             (skip-chars-forward end #'syntax-symbol-char-p)
              (make-instance '|Hover|
                             :|contents| describe-string
                             :|range| (make-lsp-range start end)))
@@ -317,10 +321,10 @@
 
 (defun arglist (point)
   (loop :with start := (beginning-of-defun-point point 1)
-        :while (lem-base:form-offset point -1)
-        :do (when (lem-base:point< point start)
+        :while (form-offset point -1)
+        :do (when (point< point start)
               (return-from arglist nil)))
-  (lem-base:skip-whitespace-forward point)
+  (skip-whitespace-forward point)
   (let ((symbol-string (symbol-string-at-point* point)))
     (when symbol-string
       (operator-arglist symbol-string
@@ -355,7 +359,7 @@
 (define-method "textDocument/definition" (params |TextDocumentPositionParams|)
   (with-text-document-position (point) params
     (alexandria:when-let ((name (symbol-string-at-point* point)))
-      (alexandria:if-let ((p (lem-lisp-syntax.enclosing:search-local-definition point name)))
+      (alexandria:if-let ((p (search-local-definition point name)))
         (convert-to-hash-table (buffer-location p))
         (list-to-object-or-object[]
          (xref-locations-from-definitions
@@ -381,10 +385,10 @@
                                          (:char-class #\( #\) #\space #\tab #\:))
                                         :end-anchor))
                                      :case-insensitive-mode t)))
-    (lem-base:with-point ((point (lem-base:buffer-start-point buffer)))
-      (loop :while (lem-base:search-forward-regexp point regex)
-            :collect (lem-base:with-point ((start point))
-                       (lem-base:character-offset start (- (length name)))
+    (with-point ((point (buffer-start-point buffer)))
+      (loop :while (search-forward-regexp point regex)
+            :collect (with-point ((start point))
+                       (character-offset start (- (length name)))
                        (funcall function (make-lsp-range start point)))))))
 
 (defun symbol-name-at-point (point)
@@ -400,7 +404,7 @@
   (with-text-document-position (point) params
     (list-to-object[]
      (alexandria:when-let (name (symbol-name-at-point point))
-       (collect-symbol-range (lem-base:point-buffer point) name
+       (collect-symbol-range (point-buffer point) name
                              (lambda (range)
                                (convert-to-hash-table
                                 (make-instance '|DocumentHighlight|
@@ -460,8 +464,8 @@
 (defun document-symbol (buffer)
   (let ((symbol-informations '())
         (used (make-hash-table :test 'equal))
-        (package (search-buffer-package (lem-base:buffer-start-point buffer)))
-        (buffer-file (lem-base:buffer-filename buffer)))
+        (package (search-buffer-package (buffer-start-point buffer)))
+        (buffer-file (buffer-filename buffer)))
     (map-buffer-symbols
      buffer
      (lambda (symbol-string)
@@ -477,7 +481,7 @@
 (define-method "textDocument/documentSymbol" (params |DocumentSymbolParams|)
   (let* ((text-document (slot-value params '|textDocument|))
          (uri (slot-value text-document '|uri|))
-         (buffer (lem-base:get-buffer uri)))
+         (buffer (get-buffer uri)))
     (when buffer
       (document-symbol buffer))))
 
@@ -490,7 +494,7 @@
   (with-slots (|textDocument| |range| |options|) params
     (with-slots (|start| |end|) |range|
       (with-document-position (start (slot-value |textDocument| '|uri|) |start|)
-        (lem-base:with-point ((end start))
+        (with-point ((end start))
           (move-to-lsp-position end |end|)
           (range-formatting start end |options|))))))
 
@@ -509,10 +513,10 @@
   (with-slots (|textDocument| |position| |newName|) params
     (with-document-position (point (slot-value |textDocument| '|uri|) |position|)
       (alexandria:when-let ((name (symbol-name-at-point point)))
-        (let* ((buffer (lem-base:point-buffer point))
-               (uri (filename-to-uri (lem-base:buffer-filename buffer)))
+        (let* ((buffer (point-buffer point))
+               (uri (filename-to-uri (buffer-filename buffer)))
                (edits (collect-symbol-range
-                       (lem-base:point-buffer point)
+                       (point-buffer point)
                        name
                        (lambda (range)
                          (make-instance '|TextEdit|
@@ -527,7 +531,7 @@
             ;;                      '|TextDocumentEdit|
             ;;                      :|textDocument| (make-instance
             ;;                                       '|VersionedTextDocumentIdentifier|
-            ;;                                       :|version| (lem-base:buffer-version buffer)
+            ;;                                       :|version| (buffer-version buffer)
             ;;                                       :|uri| uri)
             ;;                      :|edits| edits))
             )))))))

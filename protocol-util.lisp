@@ -1,7 +1,7 @@
 (defpackage :cl-lsp/protocol-util
   (:use :cl
-        :lem-base
-        :cl-lsp/protocol)
+        :cl-lsp/protocol
+        :lem-base)
   (:import-from :quri)
   (:export :list-to-object-or-object[]
            :list-to-object[]

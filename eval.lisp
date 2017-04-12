@@ -7,9 +7,11 @@
         :cl-lsp/slime
         :cl-lsp/swank
         :cl-lsp/gray-streams)
+  (:import-from :lem-base
+                :with-point
+                :points-to-string)
   (:import-from :bordeaux-threads)
   (:import-from :swank)
-  (:import-from :lem-base)
   (:import-from :jsonrpc))
 (in-package :cl-lsp/eval)
 
@@ -195,9 +197,9 @@
          (range (convert-from-hash-table '|Range| (gethash "range" params))))
     (with-slots (|start| |end|) range
       (with-document-position (start uri |start|)
-        (lem-base:with-point ((end start))
+        (with-point ((end start))
           (move-to-lsp-position end |end|)
-          (send-eval-string (lem-base:points-to-string start end)
+          (send-eval-string (points-to-string start end)
                             (search-buffer-package start)))))))
 
 (define-method "lisp/interrupt" (params nil t)
