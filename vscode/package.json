@@ -46,7 +46,7 @@
       },
       {
         "command": "lisp.interrupt",
-        "key": "ctrl+c ctrl+c"
+        "key": "F6"
       },
       {
         "command": "lisp.compileAndLoadFile",
