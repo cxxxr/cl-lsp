@@ -3,6 +3,7 @@ An implementation of the Language Server Protocol for Common Lisp
 
 # Installation
 * Install [roswell](https://github.com/roswell/roswell/)
+* `$ ros install fukamachi/jsonrpc`
 * `$ ros install cxxxr/cl-lsp`
 
 # VS Code
