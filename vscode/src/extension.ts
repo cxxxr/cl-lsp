@@ -78,7 +78,7 @@ export function activate(context: ExtensionContext) {
 	languageClient = new LanguageClient("Common Lisp Language Server", serverOptions, clientOptions);
 	languageClient.onReady().then(function (x) {
 		languageClient.onNotification("lisp/evalBegin", function (f) {
-			window.setStatusBarMessage("Evaluating...");
+			window.setStatusBarMessage("Eval...");
 		})
 		languageClient.onNotification("lisp/evalEnd", function (f) {
 			window.setStatusBarMessage("Done");
