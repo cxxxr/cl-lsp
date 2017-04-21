@@ -62,7 +62,7 @@ export function activate(context: ExtensionContext) {
 
 	serverOptions = () => new Promise<child_process.ChildProcess>((resolve, reject) => {
 		function spawnServer(...args: string[]): child_process.ChildProcess {
-			let childProcess = child_process.spawn("cl-lsp.ros", ["stdio"]);
+			let childProcess = child_process.spawn("cl-lsp", ["stdio"]);
 			return childProcess;
 		}
 		resolve(spawnServer());
