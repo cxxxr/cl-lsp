@@ -11,7 +11,7 @@ CL-LSP is an implementation of the [Language Server Protocol](https://microsoft.
 
     3. Verfiy installation: `~/.roswell/bin/cl-lsp`.
 
-2. Configure your editor to use CL-LSP. See [Editors](Editors) for more information about editor integration.
+2. Configure your editor to use CL-LSP. See below for more information about editor integration.
 
 3. Enjoy!
 
