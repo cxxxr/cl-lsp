@@ -21,7 +21,7 @@ Depends `CL-LSP` on [vscode-lisp](https://github.com/mattn/vscode-lisp). See [vs
 
 ## Status
 
-CL-LSP is still in early development, so you may run into rough edges with any of the features. The following table shows the status of various features when using the latest development toolchain snapshot. See [Caveats](#caveats) for important known issues you may run into.
+CL-LSP is still in early development, so you may run into rough edges with any of the features. The following table shows the status of various features when using the latest development toolchain snapshot.
 
 | Feature | Status | Notes |
 |---------|:------:|-------|
