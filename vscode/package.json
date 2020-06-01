@@ -90,7 +90,7 @@
             "verbose"
           ],
           "default": "off",
-          "description": "Traces the communication between VSCode and the CL-LSP service."
+          "description": "Traces the communication between Visual Studio Code and the CL-LSP service."
         }
       }
     }
