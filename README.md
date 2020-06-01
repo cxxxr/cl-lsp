@@ -3,8 +3,6 @@ CL-LSP is an implementation of the [Language Server Protocol](https://microsoft.
 
 ## Getting Started
 
-The CL-LSP server is included with the Swift toolchain. Depending on how you installed Swift, you may already have SourceKit-LSP. Make sure you build your package with the same toolchain as you use sourcekit-lsp from to ensure compatibility.
-
 1. Get CL-LSP Installed
 
     1. Install [roswell](https://github.com/roswell/roswell/)
