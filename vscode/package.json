@@ -1,20 +1,22 @@
 {
-  "name": "language-client-example",
-  "description": "VSCode part of a language server",
+  "name": "cl-lsp",
+  "displayName": "CL-LSP",
+  "description": "Language server for Common Lisp",
   "author": "Microsoft Corporation",
   "license": "MIT",
   "version": "0.0.1",
-  "publisher": "vscode",
+  "publisher": "unpublished",
+  "repository": "https://github.com/cxxxr/cl-lsp",
   "engines": {
-    "vscode": "^1.8.0"
+    "vscode": "^1.28.0"
   },
   "categories": [
-    "Other"
+    "Programming Languages"
   ],
   "activationEvents": [
     "onLanguage:lisp"
   ],
-  "main": "./out/src/extension",
+  "main": "./out/extension",
   "contributes": {
     "commands": [
       {
@@ -55,14 +57,32 @@
     ],
     "configuration": {
       "type": "object",
-      "title": "Example configuration",
+      "title": "CL-LSP",
       "properties": {
-        "languageServerExample.maxNumberOfProblems": {
+        "cl-lsp.serverPath": {
+          "type": "string",
+          "default": "cl-lsp",
+          "description": "The path of the cl-lsp executable"
+        },
+        "cl-lsp.serverArguments": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "Arguments to pass to cl-lsp. Argument keys and values should be provided as separate entries in the array e.g. ['--log-level', 'debug']"
+        },
+        "cl-lsp.toolchainPath": {
+          "type": "string",
+          "default": "",
+          "description": "(optional) The path of the swift toolchain. By default, cl-lsp uses the toolchain it is installed in."
+        },
+        "cl-lsp.maxNumberOfProblems": {
           "type": "number",
           "default": 100,
           "description": "Controls the maximum number of problems produced by the server."
         },
-        "languageServerExample.trace.server": {
+        "cl-lsp.trace.server": {
           "type": "string",
           "enum": [
             "off",
@@ -70,24 +90,25 @@
             "verbose"
           ],
           "default": "off",
-          "description": "Traces the communication between VSCode and the languageServerExample service."
+          "description": "Traces the communication between VSCode and the CL-LSP service."
         }
       }
     }
   },
   "scripts": {
-    "vscode:prepublish": "tsc -p ./",
-    "compile": "tsc -watch -p ./",
-    "update-vscode": "node ./node_modules/vscode/bin/install",
-    "postinstall": "node ./node_modules/vscode/bin/install"
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "postinstall": "node ./node_modules/vscode/bin/install",
+    "createDevPackage": "npm install && ./node_modules/.bin/vsce package -o ./out/cl-lsp-vscode-dev.vsix"
   },
   "devDependencies": {
-    "@types/mocha": "^2.2.33",
-    "@types/node": "^6.0.52",
-    "typescript": "^2.1.5",
-    "vscode": "^1.0.3"
+    "@types/node": "^8.10.25",
+    "typescript": "^3.9.3",
+    "vsce": "^1.53.2",
+    "vscode": "^1.1.34"
   },
   "dependencies": {
-    "vscode-languageclient": "^3.1.0"
+    "vscode-languageclient": "^4.0.0"
   }
 }
