@@ -28,7 +28,7 @@ code --install-extension out/cl-lsp-vscode-dev.vsix
 
 Or you can install from within the application using the `Extensions > Install from VSIX...` command from the command palette.
 
-**Finally**, restart Visual Studio Code and don't forget to set the `Server Path`. Please see Configuration below
+**Finally**, restart Visual Studio Code and don't forget to set the `Server Path` and add the argument `'stdio'` to the `Server Arguments`. Please see Configuration below
 
 ### Developing the Extension in Visual Studio Code
 
