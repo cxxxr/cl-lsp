@@ -21,8 +21,24 @@ The CL-LSP server is included with the Swift toolchain. Depending on how you ins
 
 Depends `CL-LSP` on [vscode-lisp](https://github.com/mattn/vscode-lisp). See [vscode](vscode) for more information about Visual Studio Code integration.
 
-```
-$ cd vscode
-$ npm run createDevPackage
-$ code --install-extension out/cl-lsp-vscode-dev.vsix
-```
+## Status
+
+CL-LSP is still in early development, so you may run into rough edges with any of the features. The following table shows the status of various features when using the latest development toolchain snapshot. See [Caveats](#caveats) for important known issues you may run into.
+
+| Feature | Status | Notes |
+|---------|:------:|-------|
+| Common Lisp | ✅ | |
+| Code completion | ✅ | |
+| Quick Help (Hover) | ❔ | |
+| Diagnostics | ❔ | |
+| Fix-its | ❔ | |
+| Jump to Definition | ❔ | |
+| Find References | ❔ | |
+| Background Indexing | ❔ | |
+| Workspace Symbols | ❔ | |
+| Global Rename | ❌ | |
+| Local Refactoring | ✅ | |
+| Formatting | ❌ | |
+| Folding | ❔ | |
+| Syntax Highlighting | ❌ | Not currently part of LSP. |
+| Document Symbols | ❔ |  |

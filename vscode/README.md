@@ -9,14 +9,14 @@ a preview. Users will need to provide the `cl-lsp` executable.
 ## Building and Installing the Extension
 
 Currently, the way to get the extension is to build and install it from source.
-You will also need the `cl-lsp` language server executable and a Common Lisp toolchain. For more information about cl-lsp, see [here](https://github.com/apple/cl-lsp).
+You will also need the `cl-lsp` language server executable and a Common Lisp toolchain. For more information about cl-lsp, see [here](https://github.com/cxxxr/cl-lsp).
 
 **Prerequisite**: To build the extension, you will need Node.js and npm: https://www.npmjs.com/get-npm.
 
 The following commands build the extension and creates a `.vsix` package in the `out` directory.
 
 ```
-$ cd /vscode
+$ cd vscode/
 $ npm run createDevPackage
 ```
 
@@ -28,7 +28,7 @@ code --install-extension out/cl-lsp-vscode-dev.vsix
 
 Or you can install from within the application using the `Extensions > Install from VSIX...` command from the command palette.
 
-**Finally**, set restart VSCode. Don't forget to set the `Server Path`. Please see Configuration below
+**Finally**, restart Visual Studio Code and don't forget to set the `Server Path`. Please see Configuration below
 
 ### Developing the Extension in Visual Studio Code
 
@@ -44,7 +44,7 @@ There is extensive documentation for developing extensions from within Visual St
 
 ## Configuration
 
-Settings for cl-LSP can be found in `Preferences > Settings` under
+Settings for CL-LSP can be found in `Preferences > Settings` under
 `Extensions > CL-LSP` or by searching for the setting prefix
 `cl-lsp.`.
 
