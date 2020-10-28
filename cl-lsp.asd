@@ -13,10 +13,13 @@
                "quri"
                "jsonrpc"
                "yason"
+               "trivial-utf-8"
+               "jsonrpc/transport/stdio"
                "cl-lsp.lem-base"
                "cl-lsp.lem-lisp-syntax")
   :serial t
-  :components ((:file "logger")
+  :components ((:file "jsonrpc-patch")
+               (:file "logger")
                (:file "gray-streams")
                (:file "swank")
                (:file "slime")
