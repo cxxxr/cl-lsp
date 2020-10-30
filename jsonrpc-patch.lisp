@@ -1,7 +1,7 @@
 (in-package :jsonrpc/transport/stdio)
 
 (defmethod send-message-using-transport ((transport stdio-transport) connection message)
-  (let ((json (trivial-utf-8:string-to-utf-8-bytes
+  (let ((json (babel:string-to-octets
                (with-output-to-string (s)
                  (yason:encode message s))))
         (stream (connection-socket connection)))
@@ -11,6 +11,15 @@
             #\Newline)
     (write-sequence json stream)
     (force-output stream)))
+
+(defun character-size-in-octets (char)
+  (babel:string-size-in-octets
+   (string char)
+   :encoding
+   #+(and sbcl win32)
+   sb-impl::*default-external-format*
+   #-(and sbcl win32)
+   :utf-8))
 
 (defmethod receive-message-using-transport ((transport stdio-transport) connection)
   (let* ((stream (connection-socket connection))
@@ -22,7 +31,7 @@
                 (loop
                   :for c := (read-char stream)
                   :do (write-char c out)
-                      (decf length (babel:string-size-in-octets (string c)))
+                      (decf length (character-size-in-octets c))
                       (when (<= length 0)
                         (return))))))
         (parse-message body)))))
