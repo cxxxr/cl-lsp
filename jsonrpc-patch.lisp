@@ -30,7 +30,12 @@
               (with-output-to-string (out)
                 (loop
                   :for c := (read-char stream)
-                  :do (write-char c out)
+		  :for i :from 0
+                  :do (uiop:symbol-call :cl-lsp/logger
+					:log-format
+					"~D ~C ~D ~S~%"
+					i c (char-code c) sb-impl::*default-external-format*)
+		      (write-char c out)
                       (decf length (character-size-in-octets c))
                       (when (<= length 0)
                         (return))))))

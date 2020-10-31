@@ -7,7 +7,7 @@
            :with-log-stream))
 (in-package :cl-lsp/logger)
 
-(defvar *enable-logger* nil)
+(defvar *enable-logger* t)
 (defvar *logger-stream*)
 
 (let ((lock (bt:make-lock)))
