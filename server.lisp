@@ -336,7 +336,7 @@
                                :|label| arglist))))))))
 
 (defun xref-location (xref)
-  (optima:match xref
+  (trivia:match xref
     ((list _
            (list :location
                  (list :file file)
@@ -435,7 +435,7 @@
   |SymbolKind.Function|)
 
 (defun xref-to-symbol-information (name xref buffer-file)
-  (optima:match xref
+  (trivia:match xref
     ((list (cons type _)
            (list :location
                  (list :file file)

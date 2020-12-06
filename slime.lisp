@@ -85,8 +85,8 @@
 
 (defun compilation-notes (notes function)
   (dolist (note notes)
-    (optima:match note
-      ((and (optima:property :location
+    (trivia:match note
+      ((and (trivia:property :location
                              (or (list :location
                                        (list :buffer buffer-name)
                                        (list :offset pos _)
@@ -95,9 +95,9 @@
                                        (list :file file)
                                        (list :position pos)
                                        _)))
-            (or (optima:property :message message) (and))
-            (or (optima:property :severity severity) (and))
-            (or (optima:property :source-context _source-context) (and)))
+            (or (trivia:property :message message) (and))
+            (or (trivia:property :severity severity) (and))
+            (or (trivia:property :source-context _source-context) (and)))
        (let* ((buffer (if buffer-name
                           (get-buffer buffer-name)
                           (get-file-buffer file)))

@@ -6,7 +6,7 @@
                "trivial-gray-streams"
                "swank"
                "cl-ppcre"
-               "optima"
+               "trivia"
                "alexandria"
                "trivial-types"
                "closer-mop"
