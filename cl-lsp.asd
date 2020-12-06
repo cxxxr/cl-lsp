@@ -13,7 +13,6 @@
                "quri"
                "jsonrpc"
                "yason"
-               "trivial-utf-8"
                "jsonrpc/transport/stdio"
                "cl-lsp.lem-base"
                "cl-lsp.lem-lisp-syntax")
