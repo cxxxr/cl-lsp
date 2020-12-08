@@ -274,7 +274,7 @@
   (|sortText| :optional t :type string)
   (|filterText| :optional t :type string)
   (|insertText| :optional t :type string)
-  (|insertTextFormat| :optional t :type |InsertTextFormat|)
+  (|insertTextFormat| :optional t :type integer)
   (|textEdit| :optional t :type |TextEdit|)
   (|additionalTextEdits| :optional t :type (trivial-types:proper-list |TextEdit|))
   (|command| :optional t :type |Command|)
