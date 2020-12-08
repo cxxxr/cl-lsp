@@ -11,7 +11,8 @@
                "jsonrpc"
                "yason"
                "jsonrpc/transport/stdio"
-               "lem")
+               "lem-base"
+               "lem-lisp-syntax")
   :serial t
   :components ((:file "jsonrpc-patch")
                (:file "logger")
