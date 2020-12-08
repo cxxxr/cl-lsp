@@ -1,6 +1,3 @@
-(load-asd (merge-pathnames "cl-lsp.lem-base.asd" *load-pathname*))
-(load-asd (merge-pathnames "cl-lsp.lem-lisp-syntax.asd" *load-pathname*))
-
 (defsystem "cl-lsp"
   :depends-on ("bordeaux-threads"
                "trivial-gray-streams"
