@@ -97,7 +97,7 @@
                                        _)))
             (or (trivia:property :message message) (and))
             (or (trivia:property :severity severity) (and))
-            (or (trivia:property :source-context _source-context) (and)))
+            (or (trivia:property :source-context _) (and)))
        (let* ((buffer (if buffer-name
                           (get-buffer buffer-name)
                           (get-file-buffer file)))
