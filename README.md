@@ -7,7 +7,7 @@ CL-LSP is an implementation of the [Language Server Protocol](https://microsoft.
 
     1. Install [roswell](https://github.com/roswell/roswell/)
 
-    2. Then install `CL-LSP`: `$ ros install cxxxr/cl-lsp`
+    2. Then install `CL-LSP`: `$ ros install cxxxr/lem cxxxr/cl-lsp`
 
     3. Verfiy installation: `~/.roswell/bin/cl-lsp`.
 
