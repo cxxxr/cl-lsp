@@ -3,8 +3,9 @@
         :cl-lsp/protocol
         :cl-lsp/protocol-util
         :cl-lsp/logger
-        :cl-lsp.lem-base)
-  (:import-from :cl-lsp.lem-lisp-syntax.indent
+        :lem-base)
+  (:shadow :indent-line)
+  (:import-from :lem-lisp-syntax
                 :calc-indent)
   (:export :on-type-formatting
            :range-formatting
@@ -34,7 +35,10 @@
                         :|newText| (make-string new-column :initial-element #\space)))))))
 
 (defun set-formatting-options (options)
-  (setf (tab-size) (slot-value options '|tabSize|)))
+  (declare (ignore options))
+  ;; TODO
+  ;; (setf (tab-size) (slot-value options '|tabSize|))
+  )
 
 (defun on-type-formatting (point ch options)
   (declare (ignore ch))

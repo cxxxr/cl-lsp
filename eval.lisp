@@ -7,7 +7,7 @@
         :cl-lsp/slime
         :cl-lsp/swank
         :cl-lsp/gray-streams)
-  (:import-from :cl-lsp.lem-base
+  (:import-from :lem-base
                 :with-point
                 :points-to-string))
 (in-package :cl-lsp/eval)

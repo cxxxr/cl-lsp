@@ -6,10 +6,9 @@
         :cl-lsp/slime
         :cl-lsp/swank
         :cl-lsp/formatting
-        :cl-lsp.lem-base)
-  (:import-from :cl-lsp.lem-lisp-syntax.syntax-table
-                :*syntax-table*)
-  (:import-from :cl-lsp.lem-lisp-syntax.enclosing
+        :lem-base)
+  (:import-from :lem-lisp-syntax
+                :*syntax-table*
                 :search-local-definition)
   (:export :*server*
            :*method-lock*
@@ -202,9 +201,9 @@
     (with-slots (|uri| |languageId| |version| |text|)
         text-document
       (let ((buffer (make-buffer |uri|
-                                 :filename (uri-to-filename |uri|)
                                  :enable-undo-p nil
                                  :syntax-table *syntax-table*)))
+        (setf (buffer-filename buffer) (uri-to-filename |uri|))
         (insert-string (buffer-point buffer) |text|)
         (setf (buffer-value buffer 'document)
               (list :languageId |languageId|

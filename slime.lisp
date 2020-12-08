@@ -1,6 +1,6 @@
 (defpackage :cl-lsp/slime
   (:use :cl
-        :cl-lsp.lem-base)
+        :lem-base)
   (:export :symbol-string-at-point*
            :beginning-of-defun-point
            :beginning-of-defun
