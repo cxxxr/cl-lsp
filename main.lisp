@@ -4,7 +4,9 @@
         :cl-lsp/logger
         :cl-lsp/eval)
   (:export :run-tcp-mode
-           :run-stdio-mode))
+           :run-stdio-mode)
+  #+sbcl
+  (:lock t))
 (in-package :cl-lsp/main)
 
 (defun run-tcp-mode (&key (port 10003))

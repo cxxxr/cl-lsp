@@ -7,7 +7,9 @@
            :form-string
            :map-buffer-symbols
            :search-buffer-package
-           :compilation-notes))
+           :compilation-notes)
+  #+sbcl
+  (:lock t))
 (in-package :cl-lsp/slime)
 
 (defun symbol-string-at-point* (point)

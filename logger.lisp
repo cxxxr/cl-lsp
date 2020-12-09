@@ -4,7 +4,9 @@
            :*logger-stream*
            :log-format
            :with-log-file
-           :with-log-stream))
+           :with-log-stream)
+  #+sbcl
+  (:lock t))
 (in-package :cl-lsp/logger)
 
 (defvar *enable-logger* nil)

@@ -9,7 +9,9 @@
         :cl-lsp/gray-streams)
   (:import-from :lem-base
                 :with-point
-                :points-to-string))
+                :points-to-string)
+  #+sbcl
+  (:lock t))
 (in-package :cl-lsp/eval)
 
 (defvar *eval-thread* nil)

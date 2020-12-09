@@ -1,7 +1,9 @@
 (defpackage :cl-lsp/protocol
   (:use :cl)
   (:export :convert-from-hash-table
-           :convert-to-hash-table))
+           :convert-to-hash-table)
+  #+sbcl
+  (:lock t))
 (in-package :cl-lsp/protocol)
 
 (defvar null-slot-value (make-symbol "NULL"))

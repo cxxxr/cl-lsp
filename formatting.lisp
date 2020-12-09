@@ -9,7 +9,9 @@
                 :calc-indent)
   (:export :on-type-formatting
            :range-formatting
-           :buffer-formatting))
+           :buffer-formatting)
+  #+sbcl
+  (:lock t))
 (in-package :cl-lsp/formatting)
 
 (defun indent-line (p &optional editp)

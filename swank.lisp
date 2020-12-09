@@ -7,7 +7,9 @@
            :operator-arglist
            :find-definitions
            :swank-apropos-list
-           :swank-compile-file))
+           :swank-compile-file)
+  #+sbcl
+  (:lock t))
 (in-package :cl-lsp/swank)
 
 (defvar *fuzzy-completions* nil)

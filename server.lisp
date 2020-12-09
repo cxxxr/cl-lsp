@@ -19,7 +19,9 @@
            :with-document-position
            :with-text-document-position
            :notify-show-message
-           :notify-log-message))
+           :notify-log-message)
+  #+sbcl
+  (:lock t))
 (in-package :cl-lsp/server)
 
 (defvar *server* (jsonrpc:make-server))
