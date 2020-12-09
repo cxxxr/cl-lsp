@@ -35,13 +35,14 @@
                            (when (second option)
                              `(cl-package-locks:lock-package ',package-name)))
                           (:local-nicknames
-                           (loop :for (local-nickname . actual-package-names) :in (rest option)
-                                 :append (mapcan (lambda (actual-package)
-                                                   `(trivial-package-local-nicknames:add-package-local-nickname
-                                                     ',local-nickname
-                                                     ',actual-package
-                                                     ',package-name))
-                                                 actual-package-names))))
+                           `(progn
+                              ,@(loop :for (local-nickname . actual-package-names) :in (rest option)
+                                      :append (mapcar (lambda (actual-package)
+                                                        `(trivial-package-local-nicknames:add-package-local-nickname
+                                                          ',local-nickname
+                                                          ',actual-package
+                                                          ',package-name))
+                                                      actual-package-names)))))
                   :when form
                   :collect form)))
       `(eval-when (:compile-toplevel :load-toplevel :execute) ,@forms))))
