@@ -1,4 +1,4 @@
-(defpackage :cl-lsp/eval
+(cl-lsp/defpackage:defpackage :cl-lsp/eval
   (:use :cl
         :cl-lsp/logger
         :cl-lsp/server
@@ -10,7 +10,6 @@
   (:import-from :lem-base
                 :with-point
                 :points-to-string)
-  #+sbcl
   (:lock t))
 (in-package :cl-lsp/eval)
 

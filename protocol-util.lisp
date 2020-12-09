@@ -1,4 +1,4 @@
-(defpackage :cl-lsp/protocol-util
+(cl-lsp/defpackage:defpackage :cl-lsp/protocol-util
   (:use :cl
         :cl-lsp/protocol
         :lem-base)
@@ -10,7 +10,6 @@
            :make-lsp-range
            :file-location
            :buffer-location)
-  #+sbcl
   (:lock t))
 (in-package :cl-lsp/protocol-util)
 

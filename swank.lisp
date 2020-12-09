@@ -1,4 +1,4 @@
-(defpackage :cl-lsp/swank
+(cl-lsp/defpackage:defpackage :cl-lsp/swank
   (:use :cl)
   (:export :swank-init
            :fuzzy-completions
@@ -8,7 +8,6 @@
            :find-definitions
            :swank-apropos-list
            :swank-compile-file)
-  #+sbcl
   (:lock t))
 (in-package :cl-lsp/swank)
 

@@ -1,11 +1,10 @@
-(defpackage :cl-lsp/logger
+(cl-lsp/defpackage:defpackage :cl-lsp/logger
   (:use :cl)
   (:export :*enable-logger*
            :*logger-stream*
            :log-format
            :with-log-file
            :with-log-stream)
-  #+sbcl
   (:lock t))
 (in-package :cl-lsp/logger)
 

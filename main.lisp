@@ -1,11 +1,10 @@
-(defpackage :cl-lsp/main
+(cl-lsp/defpackage:defpackage :cl-lsp/main
   (:use :cl
         :cl-lsp/server
         :cl-lsp/logger
         :cl-lsp/eval)
   (:export :run-tcp-mode
            :run-stdio-mode)
-  #+sbcl
   (:lock t))
 (in-package :cl-lsp/main)
 

@@ -1,4 +1,4 @@
-(defpackage :cl-lsp/server
+(cl-lsp/defpackage:defpackage :cl-lsp/server
   (:use :cl
         :cl-lsp/protocol
         :cl-lsp/protocol-util
@@ -20,7 +20,6 @@
            :with-text-document-position
            :notify-show-message
            :notify-log-message)
-  #+sbcl
   (:lock t))
 (in-package :cl-lsp/server)
 

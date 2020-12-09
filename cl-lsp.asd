@@ -12,9 +12,12 @@
                "yason"
                "jsonrpc/transport/stdio"
                "lem-base"
-               "lem-lisp-syntax")
+               "lem-lisp-syntax"
+               "cl-package-locks"
+               "trivial-package-local-nicknames")
   :serial t
   :components ((:file "jsonrpc-patch")
+               (:file "defpackage")
                (:file "logger")
                (:file "gray-streams")
                (:file "swank")

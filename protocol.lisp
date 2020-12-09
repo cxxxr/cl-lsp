@@ -1,8 +1,7 @@
-(defpackage :cl-lsp/protocol
+(cl-lsp/defpackage:defpackage :cl-lsp/protocol
   (:use :cl)
   (:export :convert-from-hash-table
            :convert-to-hash-table)
-  #+sbcl
   (:lock t))
 (in-package :cl-lsp/protocol)
 

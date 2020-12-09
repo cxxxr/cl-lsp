@@ -1,7 +1,6 @@
-(defpackage :cl-lsp/gray-streams
+(cl-lsp/defpackage:defpackage :cl-lsp/gray-streams
   (:use :cl :trivial-gray-streams)
   (:export :lsp-output-stream)
-  #+sbcl
   (:lock t))
 (in-package :cl-lsp/gray-streams)
 

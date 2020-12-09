@@ -1,4 +1,4 @@
-(defpackage :cl-lsp/formatting
+(cl-lsp/defpackage:defpackage :cl-lsp/formatting
   (:use :cl
         :cl-lsp/protocol
         :cl-lsp/protocol-util
@@ -10,7 +10,6 @@
   (:export :on-type-formatting
            :range-formatting
            :buffer-formatting)
-  #+sbcl
   (:lock t))
 (in-package :cl-lsp/formatting)
 

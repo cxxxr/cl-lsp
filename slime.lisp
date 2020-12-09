@@ -1,4 +1,4 @@
-(defpackage :cl-lsp/slime
+(cl-lsp/defpackage:defpackage :cl-lsp/slime
   (:use :cl
         :lem-base)
   (:export :symbol-string-at-point*
@@ -8,7 +8,6 @@
            :map-buffer-symbols
            :search-buffer-package
            :compilation-notes)
-  #+sbcl
   (:lock t))
 (in-package :cl-lsp/slime)
 
