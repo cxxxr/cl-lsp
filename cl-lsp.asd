@@ -13,6 +13,7 @@
                "jsonrpc/transport/stdio"
                "lem-base"
                "lem-lisp-syntax"
+               "lem-lsp-utils"
                "cl-package-locks"
                "trivial-package-local-nicknames")
   :serial t

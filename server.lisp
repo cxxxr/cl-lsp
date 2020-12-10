@@ -10,6 +10,9 @@
   (:import-from :lem-lisp-syntax
                 :*syntax-table*
                 :search-local-definition)
+  (:local-nicknames (:protocol :lem-lsp-utils/protocol)
+                    (:json :lem-lsp-utils/json)
+                    (:json-lsp-utils :lem-lsp-utils/json-lsp-utils))
   (:export :*server*
            :*method-lock*
            :*initialized-hooks*
@@ -123,6 +126,61 @@
      (list "code" -32002
            "message" "did not initialize")
      :test 'equal)))
+
+(defun make-server-capabilities ()
+  (make-instance
+   'protocol:server-capabilities
+   :text-document-sync (make-instance
+                        'protocol:text-document-sync-options
+                        :open-close (json:json-false)
+                        :change protocol:text-document-sync-kind.incremental
+                        :will-save (json:json-false)
+                        :will-save-wait-until (json:json-false)
+                        :save (json:json-false))
+   :completion-provider (make-instance
+                         'protocol:completion-options
+                         :work-done-progress (json:json-false)
+                         :trigger-characters (loop :for code
+                                                   :from (char-code #\a)
+                                                   :to (char-code #\z)
+                                                   :collect (string (code-char code)))
+                         :all-commit-characters (json:json-array) ;TODO
+                         :resolve-provider (json:json-false)) ;TODO
+   :hover-provider (make-instance 'protocol:hover-options
+                                  :work-done-progress (json:json-false))
+   :signature-help-provider (make-instance 'protocol:signature-help-options
+                                           :work-done-progress (json:json-false)
+                                           :trigger-characters (json:json-array (string #\space)) ;TODO
+                                           :retrigger-characters (json:json-array)) ;TODO
+   :declaration-provider (json:json-false)
+   :definition-provider (make-instance 'protocol:definition-options
+                                       :work-done-progress (json:json-false))
+   :type-definition-provider (json:json-false)
+   :implementation-provider (json:json-false)
+   :references-provider (make-instance 'protocol:reference-options
+                                       :work-done-progress (json:json-false))
+   :document-highlight-provider (make-instance 'protocol:document-highlight-options
+                                               :work-done-progress (json:json-false))
+   :code-action-provider (json:json-false)
+   :code-lens-provider (json:json-false)
+   :document-link-provider (json:json-false)
+   :color-provider (json:json-false)
+   :document-formatting-provider (make-instance 'protocol:document-formatting-options
+                                                :work-done-progress (json:json-false))
+   :document-range-formatting-provider (make-instance 'protocol:document-range-formatting-options
+                                                      :work-done-progress (json:json-false))
+   :document-on-type-formatting-provider (make-instance 'protocol:document-on-type-formatting-options
+                                                        :first-trigger-character ")"
+                                                        #|:more-trigger-character|#)
+   :rename-provider (make-instance 'protocol:rename-options
+                                   :work-done-progress (json:json-false)
+                                   :prepare-provider (json:json-false))
+   :folding-range-provider (json:json-false)
+   :execute-command-provider (json:json-false)
+   :selection-range-provider (json:json-false)
+   :workspace-symbol-provider (json:json-false)
+   ;:workspace
+   ))
 
 (define-method "initialize" (params |InitializeParams|)
   (setf *initialize-params* params)
