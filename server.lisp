@@ -78,6 +78,17 @@
                            (response-log ,_val)
                            ,_val))))))
 
+(defun register-method/new (name params-type function)
+  (jsonrpc:expose *server*
+                  name
+                  (lambda (params)
+                    (funcall function
+                             (json-lsp-utils:coerce-json params
+                                                         params-type)))))
+
+(defmacro define-method/new (name (params &optional params-type) &body body)
+  `(register-method/new ,name ',params-type (lambda (,params) ,@body)))
+
 (defun get-buffer-from-uri (uri)
   (get-buffer uri))
 
@@ -182,51 +193,13 @@
    ;:workspace
    ))
 
-(define-method "initialize" (params |InitializeParams|)
+(define-method/new "initialize" (params protocol:initialize-params)
   (setf *initialize-params* params)
-  (convert-to-hash-table
-   (make-instance
-    '|InitializeResult|
-    :|capabilities|
-    (make-instance
-     '|ServerCapabilities|
-     :|textDocumentSync| (progn
-                           #+(or)
-                           (make-instance
-                            '|TextDocumentSyncOptions|
-                            :|openClose| t
-                            :|change| |TextDocumentSyncKind.Incremental|
-                            :|willSave| 'yason:false
-                            :|willSaveWaitUntil| 'yason:false
-                            :|save| (make-instance '|SaveOptions| :|includeText| t))
-                           |TextDocumentSyncKind.Incremental|)
-     :|hoverProvider| t
-     :|completionProvider| (make-instance
-                            '|CompletionOptions|
-                            :|resolveProvider| nil
-                            :|triggerCharacters| (loop :for code
-                                                       :from (char-code #\a)
-                                                       :below (char-code #\z)
-                                                       :collect (string (code-char code))))
-     :|signatureHelpProvider| (make-instance
-                               '|SignatureHelpOptions|
-                               :|triggerCharacters| (list " "))
-     :|definitionProvider| t
-     :|referencesProvider| t
-     :|documentHighlightProvider| t
-     :|documentSymbolProvider| t
-     :|workspaceSymbolProvider| t
-     :|codeActionProvider| nil
-     :|codeLensProvider| nil
-     :|documentFormattingProvider| t
-     :|documentRangeFormattingProvider| t
-     :|documentOnTypeFormattingProvider| (make-instance
-                                          '|DocumentOnTypeFormattingOptions|
-                                          :|firstTriggerCharacter| ")")
-     :|renameProvider| t
-     :|documentLinkProvider| nil
-     :|executeCommandProvider| nil
-     :|experimental| nil))))
+  (json:object-to-json
+   (make-instance 'protocol:initialize-result
+                  :capabilities (make-server-capabilities)
+                  :server-info (json:make-json :name "cl-lsp"
+                                               #|:version "0.0.1"|#))))
 
 (define-method "initialized" (params)
   (swank-init)
