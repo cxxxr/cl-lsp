@@ -59,35 +59,42 @@
 (defmacro with-error-handle (&body body)
   `(call-with-error-handle (lambda () ,@body)))
 
+(defun convert-params (params params-type)
+  (etypecase params-type
+    (null params)
+    (symbol
+     (alexandria:switch ((symbol-package params-type))
+       ((load-time-value (find-package :cl-lsp/protocol))
+        (convert-from-hash-table params-type params))
+       ((load-time-value (find-package :lem-lsp-utils/protocol))
+        (json-lsp-utils:coerce-json params params-type))))))
+
+(defun call-with-request-wrapper (name function &key params params-type without-lock)
+  (with-error-handle
+    (request-log name params)
+    (check-initialized name)
+    (let* ((params (convert-params params params-type))
+           (response
+             (if without-lock
+                 (funcall function params)
+                 (bt:with-lock-held (*method-lock*)
+                   (funcall function params)))))
+      (response-log response)
+      response)))
+
+(defmacro with-request-wrapper ((name params &optional params-type without-lock) &body body)
+  `(call-with-request-wrapper ,name
+                              (lambda (,params) (declare (ignorable ,params)) ,@body)
+                              :params ,params
+                              :params-type ',params-type
+                              :without-lock ,without-lock))
+
 (defmacro define-method (name (params &optional params-type without-lock) &body body)
-  (let ((_val (gensym)))
-    `(jsonrpc:expose *server*
-                     ,name
-                     (lambda (,params)
-                       (with-error-handle
-                         (request-log ',name ,params)
-                         (let ((,_val
-                                (let ((,params ,(if params-type
-                                                    `(convert-from-hash-table ',params-type ,params)
-                                                    params)))
-                                  (declare (ignorable ,params))
-                                  (check-initialized ,name)
-                                  ,(if without-lock
-                                       `(progn ,@body)
-                                       `(bt:with-lock-held (*method-lock*) ,@body)))))
-                           (response-log ,_val)
-                           ,_val))))))
-
-(defun register-method/new (name params-type function)
-  (jsonrpc:expose *server*
-                  name
-                  (lambda (params)
-                    (funcall function
-                             (json-lsp-utils:coerce-json params
-                                                         params-type)))))
-
-(defmacro define-method/new (name (params &optional params-type) &body body)
-  `(register-method/new ,name ',params-type (lambda (,params) ,@body)))
+  `(jsonrpc:expose *server*
+                   ,name
+                   (lambda (,params)
+                     (with-request-wrapper (,name ,params ,params-type ,without-lock)
+                       ,@body))))
 
 (defun get-buffer-from-uri (uri)
   (get-buffer uri))
@@ -193,7 +200,7 @@
    ;:workspace
    ))
 
-(define-method/new "initialize" (params protocol:initialize-params)
+(define-method "initialize" (params protocol:initialize-params)
   (setf *initialize-params* params)
   (json:object-to-json
    (make-instance 'protocol:initialize-result
