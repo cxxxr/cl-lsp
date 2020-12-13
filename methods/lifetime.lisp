@@ -70,7 +70,7 @@
    ;:workspace
    ))
 
-(define-method "initialize" (params protocol:initialize-params) ()
+(define-method "initialize" (params protocol:initialize-params) (:without-initialized-check t)
   (set-client-capabilities params)
   (json:object-to-json
    (make-instance 'protocol:initialize-result

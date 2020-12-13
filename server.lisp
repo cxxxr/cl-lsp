@@ -54,35 +54,44 @@
        ((load-time-value (find-package :lem-lsp-utils/protocol))
         (json-lsp-utils:coerce-json params params-type))))))
 
-(defun call-with-request-wrapper (name function &key params params-type without-lock)
+(defun call-with-request-wrapper (name function
+                                  &key params
+                                       params-type
+                                       without-lock
+                                       without-initialized-check)
   (with-error-handle
     (request-log name params)
-    (or (error-response-if-already-initialized name)
-        (let* ((params (convert-params params params-type))
-               (response
+    (let* ((params (convert-params params params-type))
+           (response
+             (or (if without-initialized-check
+                     nil
+                     (error-response-if-already-initialized))
                  (if without-lock
                      (funcall function params)
                      (bt:with-lock-held (*method-lock*)
-                       (funcall function params)))))
-          (response-log response)
-          response))))
+                       (funcall function params))))))
+      (response-log response)
+      response)))
 
-(defmacro with-request-wrapper ((name params &optional params-type without-lock) &body body)
+(defmacro with-request-wrapper ((name params &optional params-type without-lock without-initialized-check)
+                                &body body)
   `(call-with-request-wrapper ,name
                               (lambda (,params) (declare (ignorable ,params)) ,@body)
                               :params ,params
                               :params-type ',params-type
-                              :without-lock ,without-lock))
+                              :without-lock ,without-lock
+                              :without-initialized-check ,without-initialized-check))
 
 (defmacro define-method (name
                          (&optional (params (gensym "PARAMS")) params-type)
-                         (&key without-lock)
+                         (&key without-lock without-initialized-check)
                          &body body)
-  `(jsonrpc:expose *server*
-                   ,name
-                   (lambda (,params)
-                     (with-request-wrapper (,name ,params ,params-type ,without-lock)
-                       ,@body))))
+  `(jsonrpc:expose
+    *server*
+    ,name
+    (lambda (,params)
+      (with-request-wrapper (,name ,params ,params-type ,without-lock ,without-initialized-check)
+        ,@body))))
 
 (defun notify-show-message (type message)
   (log-format "window/showMessage: ~A ~A~%" type message)
@@ -107,9 +116,8 @@
 (defun set-client-capabilities (initialize-params)
   (setf *initialize-params* initialize-params))
 
-(defun error-response-if-already-initialized (method-name)
-  (when (and (string/= method-name "initialize")
-             (null *initialize-params*))
+(defun error-response-if-already-initialized ()
+  (unless *initialize-params*
     (alexandria:plist-hash-table
      (list "code" -32002
            "message" "did not initialize")
