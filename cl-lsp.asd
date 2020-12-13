@@ -19,6 +19,7 @@
   :serial t
   :components ((:file "jsonrpc-patch")
                (:file "defpackage")
+               (:file "config")
                (:file "logger")
                (:file "gray-streams")
                (:file "swank")

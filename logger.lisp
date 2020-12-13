@@ -1,5 +1,7 @@
 (cl-lsp/defpackage:defpackage :cl-lsp/logger
   (:use :cl)
+  (:import-from :cl-lsp/config
+                :config)
   (:export :*enable-logger*
            :*logger-stream*
            :log-format
@@ -8,8 +10,10 @@
   (:lock t))
 (in-package :cl-lsp/logger)
 
-(defvar *enable-logger* nil)
 (defvar *logger-stream*)
+
+(defun logger-enabled-p ()
+  (config :enable-log))
 
 (let ((lock (bt:make-lock)))
   (defun log-format (string &rest args)
@@ -19,7 +23,7 @@
         (force-output *logger-stream*)))))
 
 (defun call-with-log-file (file function)
-  (if *enable-logger*
+  (if (logger-enabled-p)
       (let ((stream (open file
                           :direction :output
                           :if-does-not-exist :create
@@ -33,7 +37,7 @@
   `(call-with-log-file ,file (lambda () ,@body)))
 
 (defmacro with-log-stream ((stream) &body body)
-  `(if *enable-logger*
+  `(if (logger-enabled-p)
        (let ((*logger-stream* ,stream))
          ,@body)
        (progn ,@body)))
