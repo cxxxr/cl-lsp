@@ -66,7 +66,8 @@
    :folding-range-provider (json:json-false)
    :execute-command-provider (json:json-false)
    :selection-range-provider (json:json-false)
-   :workspace-symbol-provider (json:json-false)
+   :workspace-symbol-provider (make-instance 'protocol:workspace-symbol-options
+                                             :work-done-progress (json:json-false))
    ;:workspace
    ))
 
