@@ -44,8 +44,8 @@
 (defmacro with-text-document-position ((point) params &body body)
   `(call-with-text-document-position ,params (lambda (,point) ,@body)))
 
-(define-method "workspace/symbol" (params |WorkspaceSymbolParams|) ()
-  (let* ((query (slot-value params '|query|))
+(define-method "workspace/symbol" (params protocol:workspace-symbol-params) ()
+  (let* ((query (protocol:workspace-symbol-params-query params))
          (limit 42))
     (list-to-object[]
      (when (string/= query "")
