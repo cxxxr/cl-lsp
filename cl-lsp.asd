@@ -26,6 +26,7 @@
                (:file "protocol")
                (:file "protocol-util")
                (:file "formatting")
+               (:file "server")
                (:file "methods")
                (:file "eval")
                (:file "main")))

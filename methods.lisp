@@ -6,6 +6,7 @@
         :cl-lsp/slime
         :cl-lsp/swank
         :cl-lsp/formatting
+        :cl-lsp/server
         :lem-base)
   (:import-from :lem-lisp-syntax
                 :*syntax-table*
@@ -13,11 +14,7 @@
   (:local-nicknames (:protocol :lem-lsp-utils/protocol)
                     (:json :lem-lsp-utils/json)
                     (:json-lsp-utils :lem-lsp-utils/json-lsp-utils))
-  (:export :*server*
-           :*method-lock*
-           :*initialized-hooks*
-           :with-error-handle
-           :define-method
+  (:export :*initialized-hooks*
            :get-buffer-from-uri
            :with-document-position
            :with-text-document-position
@@ -26,75 +23,7 @@
   (:lock t))
 (in-package :cl-lsp/methods)
 
-(defvar *server* (jsonrpc:make-server))
-(defvar *method-lock* (bt:make-lock))
 (defvar *initialized-hooks* '())
-
-(defvar *request-log* t)
-(defvar *response-log* t)
-
-(defun request-log (name params)
-  (when *request-log*
-    (log-format "~%* from client~%")
-    (log-format "name: ~A~%" name)
-    (log-format "params: ~A~%"
-                (with-output-to-string (stream)
-                  (yason:encode params stream)))))
-
-(defun response-log (hash)
-  (when *response-log*
-    (log-format "~%* to server~%~A~%"
-                (with-output-to-string (out)
-                  (yason:encode hash out)))))
-
-(defun call-with-error-handle (function)
-  (handler-bind ((error (lambda (c)
-                          (log-format "~A~%~%~A~%"
-                                      c
-                                      (with-output-to-string (stream)
-                                        (uiop:print-backtrace :stream stream
-                                                              :condition c))))))
-    (funcall function)))
-
-(defmacro with-error-handle (&body body)
-  `(call-with-error-handle (lambda () ,@body)))
-
-(defun convert-params (params params-type)
-  (etypecase params-type
-    (null params)
-    (symbol
-     (alexandria:switch ((symbol-package params-type))
-       ((load-time-value (find-package :cl-lsp/protocol))
-        (convert-from-hash-table params-type params))
-       ((load-time-value (find-package :lem-lsp-utils/protocol))
-        (json-lsp-utils:coerce-json params params-type))))))
-
-(defun call-with-request-wrapper (name function &key params params-type without-lock)
-  (with-error-handle
-    (request-log name params)
-    (check-initialized name)
-    (let* ((params (convert-params params params-type))
-           (response
-             (if without-lock
-                 (funcall function params)
-                 (bt:with-lock-held (*method-lock*)
-                   (funcall function params)))))
-      (response-log response)
-      response)))
-
-(defmacro with-request-wrapper ((name params &optional params-type without-lock) &body body)
-  `(call-with-request-wrapper ,name
-                              (lambda (,params) (declare (ignorable ,params)) ,@body)
-                              :params ,params
-                              :params-type ',params-type
-                              :without-lock ,without-lock))
-
-(defmacro define-method (name (params &optional params-type without-lock) &body body)
-  `(jsonrpc:expose *server*
-                   ,name
-                   (lambda (,params)
-                     (with-request-wrapper (,name ,params ,params-type ,without-lock)
-                       ,@body))))
 
 (defun get-buffer-from-uri (uri)
   (get-buffer uri))
@@ -116,34 +45,6 @@
 
 (defmacro with-text-document-position ((point) params &body body)
   `(call-with-text-document-position ,params (lambda (,point) ,@body)))
-
-(defun notify-show-message (type message)
-  (log-format "window/showMessage: ~A ~A~%" type message)
-  (jsonrpc:notify-async *server*
-                        "window/showMessage"
-                        (convert-to-hash-table
-                         (make-instance '|ShowMessageParams|
-                                        :|type| type
-                                        :|message| message))))
-
-(defun notify-log-message (type message)
-  (log-format "window/logMessage: ~A ~A~%" type message)
-  (jsonrpc:notify-async *server*
-                        "window/logMessage"
-                        (convert-to-hash-table
-                         (make-instance '|LogMessageParams|
-                                        :|type| type
-                                        :|message| message))))
-
-(defvar *initialize-params* nil)
-
-(defun check-initialized (method-name)
-  (when (and (string/= method-name "initialize")
-             (null *initialize-params*))
-    (alexandria:plist-hash-table
-     (list "code" -32002
-           "message" "did not initialize")
-     :test 'equal)))
 
 (defun make-server-capabilities ()
   (make-instance
@@ -201,7 +102,7 @@
    ))
 
 (define-method "initialize" (params protocol:initialize-params)
-  (setf *initialize-params* params)
+  (setf cl-lsp/server::*initialize-params* params)
   (json:object-to-json
    (make-instance 'protocol:initialize-result
                   :capabilities (make-server-capabilities)

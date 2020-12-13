@@ -6,7 +6,8 @@
         :cl-lsp/protocol-util
         :cl-lsp/slime
         :cl-lsp/swank
-        :cl-lsp/gray-streams)
+        :cl-lsp/gray-streams
+        :cl-lsp/server)
   (:import-from :lem-base
                 :with-point
                 :points-to-string)
