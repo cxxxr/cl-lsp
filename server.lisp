@@ -19,22 +19,17 @@
 (defvar *server* (jsonrpc:make-server))
 (defvar *method-lock* (bt:make-lock))
 
-(defvar *request-log* t)
-(defvar *response-log* t)
-
 (defun request-log (name params)
-  (when *request-log*
-    (log-format "~%* from client~%")
-    (log-format "name: ~A~%" name)
-    (log-format "params: ~A~%"
-                (with-output-to-string (stream)
-                  (yason:encode params stream)))))
+  (log-format "~%* from client~%")
+  (log-format "name: ~A~%" name)
+  (log-format "params: ~A~%"
+              (with-output-to-string (stream)
+                (yason:encode params stream))))
 
 (defun response-log (hash)
-  (when *response-log*
-    (log-format "~%* to server~%~A~%"
-                (with-output-to-string (out)
-                  (yason:encode hash out)))))
+  (log-format "~%* to server~%~A~%"
+              (with-output-to-string (out)
+                (yason:encode hash out))))
 
 (defun call-with-error-handle (function)
   (handler-bind ((error (lambda (c)
