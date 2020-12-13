@@ -44,10 +44,10 @@
 (defmacro with-text-document-position ((point) params &body body)
   `(call-with-text-document-position ,params (lambda (,point) ,@body)))
 
-(define-method "workspace/didChangeConfiguration" (params)
+(define-method "workspace/didChangeConfiguration" () ()
   nil)
 
-(define-method "workspace/symbol" (params |WorkspaceSymbolParams|)
+(define-method "workspace/symbol" (params |WorkspaceSymbolParams|) ()
   (let* ((query (slot-value params '|query|))
          (limit 42))
     (list-to-object[]
@@ -58,7 +58,7 @@
                      :for name :in (swank-apropos-list query package)
                      :append (symbol-informations name package nil)))))))
 
-(define-method "textDocument/didOpen" (params |DidOpenTextDocumentParams|)
+(define-method "textDocument/didOpen" (params |DidOpenTextDocumentParams|) ()
   (let ((text-document
          (slot-value params
                      '|textDocument|)))
@@ -74,7 +74,7 @@
                     :version |version|)))))
   (values))
 
-(define-method "textDocument/didChange" (params |DidChangeTextDocumentParams|)
+(define-method "textDocument/didChange" (params |DidChangeTextDocumentParams|) ()
   (let ((text-document (slot-value params '|textDocument|))
         (content-changes (slot-value params '|contentChanges|)))
     (let* ((buffer (get-buffer (slot-value text-document '|uri|)))
@@ -91,13 +91,13 @@
                    (delete-character point |rangeLength|)
                    (insert-string point |text|)))))))))
 
-(define-method "textDocument/willSave" (params)
+(define-method "textDocument/willSave" () ()
   )
 
-(define-method "textDocument/willSaveWaitUntil" (params)
+(define-method "textDocument/willSaveWaitUntil" () ()
   )
 
-(define-method "textDocument/didSave" (params |DidSaveTextDocumentParams|)
+(define-method "textDocument/didSave" (params |DidSaveTextDocumentParams|) ()
   (let* ((text
           (slot-value params '|text|))
          (text-document
@@ -111,7 +111,7 @@
       (insert-string (buffer-point buffer) text)))
   (values))
 
-(define-method "textDocument/didClose" (params |DidCloseTextDocumentParams|)
+(define-method "textDocument/didClose" (params |DidCloseTextDocumentParams|) ()
   (let* ((text-document
           (slot-value params '|textDocument|))
          (uri
@@ -121,7 +121,7 @@
     (delete-buffer buffer))
   (values))
 
-(define-method "textDocument/completion" (params |TextDocumentPositionParams|)
+(define-method "textDocument/completion" (params |TextDocumentPositionParams|) ()
   (with-text-document-position (point) params
     (with-point ((start point)
                  (end point))
@@ -158,7 +158,7 @@
                                        ;:|data|
                                        ))))))))))
 
-(define-method "textDocument/hover" (params |TextDocumentPositionParams|)
+(define-method "textDocument/hover" (params |TextDocumentPositionParams|) ()
   (with-text-document-position (point) params
     (let* ((symbol-string (symbol-string-at-point* point))
            (describe-string
@@ -187,7 +187,7 @@
       (operator-arglist symbol-string
                         (search-buffer-package point)))))
 
-(define-method "textDocument/signatureHelp" (params |TextDocumentPositionParams|)
+(define-method "textDocument/signatureHelp" (params |TextDocumentPositionParams|) ()
   (with-text-document-position (point) params
     (let ((arglist (arglist point)))
       (convert-to-hash-table
@@ -213,7 +213,7 @@
         :when location
         :collect location))
 
-(define-method "textDocument/definition" (params |TextDocumentPositionParams|)
+(define-method "textDocument/definition" (params |TextDocumentPositionParams|) ()
   (with-text-document-position (point) params
     (alexandria:when-let ((name (symbol-string-at-point* point)))
       (alexandria:if-let ((p (search-local-definition point name)))
@@ -222,7 +222,7 @@
          (xref-locations-from-definitions
           (find-definitions name (search-buffer-package point))))))))
 
-(define-method "textDocument/references" (params |ReferenceParams|)
+(define-method "textDocument/references" (params |ReferenceParams|) ()
   (with-text-document-position (point) params
     (let ((symbol-string (symbol-string-at-point* point)))
       (list-to-object-or-object[]
@@ -257,7 +257,7 @@
                  (read-from-string string))))))
     name))
 
-(define-method "textDocument/documentHighlight" (params |TextDocumentPositionParams|)
+(define-method "textDocument/documentHighlight" (params |TextDocumentPositionParams|) ()
   (with-text-document-position (point) params
     (list-to-object[]
      (alexandria:when-let (name (symbol-name-at-point point))
@@ -335,19 +335,19 @@
         (mapcar #'convert-to-hash-table
                 symbol-informations))))
 
-(define-method "textDocument/documentSymbol" (params |DocumentSymbolParams|)
+(define-method "textDocument/documentSymbol" (params |DocumentSymbolParams|) ()
   (let* ((text-document (slot-value params '|textDocument|))
          (uri (slot-value text-document '|uri|))
          (buffer (get-buffer uri)))
     (when buffer
       (document-symbol buffer))))
 
-(define-method "textDocument/formatting" (params |DocumentFormattingParams|)
+(define-method "textDocument/formatting" (params |DocumentFormattingParams|) ()
   (with-slots (|textDocument| |options|) params
     (let ((buffer (get-buffer-from-uri (slot-value |textDocument| '|uri|))))
       (buffer-formatting buffer |options|))))
 
-(define-method "textDocument/rangeFormatting" (params |DocumentRangeFormattingParams|)
+(define-method "textDocument/rangeFormatting" (params |DocumentRangeFormattingParams|) ()
   (with-slots (|textDocument| |range| |options|) params
     (with-slots (|start| |end|) |range|
       (with-document-position (start (slot-value |textDocument| '|uri|) |start|)
@@ -355,18 +355,18 @@
           (move-to-lsp-position end |end|)
           (range-formatting start end |options|))))))
 
-(define-method "textDocument/onTypeFormatting" (params |DocumentOnTypeFormattingParams|)
+(define-method "textDocument/onTypeFormatting" (params |DocumentOnTypeFormattingParams|) ()
   (with-slots (|textDocument| |position| |ch| |options|) params
     (with-document-position (point (slot-value |textDocument| '|uri|) |position|)
       (on-type-formatting point |ch| |options|))))
 
-(define-method "textDocument/codeLens" (params)
+(define-method "textDocument/codeLens" () ()
   (vector))
 
-(define-method "textDocument/documentLink" (params)
+(define-method "textDocument/documentLink" () ()
   (vector))
 
-(define-method "textDocument/rename" (params |RenameParams|)
+(define-method "textDocument/rename" (params |RenameParams|) ()
   (with-slots (|textDocument| |position| |newName|) params
     (with-document-position (point (slot-value |textDocument| '|uri|) |position|)
       (alexandria:when-let ((name (symbol-name-at-point point)))

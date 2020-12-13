@@ -155,7 +155,7 @@
                 (notify-show-message |MessageType.Error|
                                      (princ-to-string condition))))))))))
 
-(define-method "lisp/compileAndLoadFile" (params |TextDocumentIdentifier|)
+(define-method "lisp/compileAndLoadFile" (params |TextDocumentIdentifier|) ()
   (let* ((uri (slot-value params '|uri|)))
     (send-eval (lambda () (compile-and-load-file uri))))
   nil)
@@ -185,7 +185,7 @@
 (defun send-eval-string (string package)
   (send-eval (lambda () (eval-string string package))))
 
-(define-method "lisp/eval" (params |TextDocumentPositionParams|)
+(define-method "lisp/eval" (params |TextDocumentPositionParams|) ()
   (with-text-document-position (point) params
     (let ((string (form-string point)))
       (when string
@@ -193,7 +193,7 @@
           (send-eval-string string package)))
       nil)))
 
-(define-method "lisp/rangeEval" (params)
+(define-method "lisp/rangeEval" (params) ()
   (let* ((uri (gethash "uri" (gethash "textDocument" params)))
          (range (convert-from-hash-table '|Range| (gethash "range" params))))
     (with-slots (|start| |end|) range
@@ -203,7 +203,7 @@
           (send-eval-string (points-to-string start end)
                             (search-buffer-package start)))))))
 
-(define-method "lisp/interrupt" (params nil t)
+(define-method "lisp/interrupt" (params nil) (:without-lock t)
   (when *eval-thread*
     (bt:interrupt-thread *eval-thread*
                          (lambda ()

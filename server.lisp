@@ -74,7 +74,10 @@
                               :params-type ',params-type
                               :without-lock ,without-lock))
 
-(defmacro define-method (name (params &optional params-type without-lock) &body body)
+(defmacro define-method (name
+                         (&optional (params (gensym "PARAMS")) params-type)
+                         (&key without-lock)
+                         &body body)
   `(jsonrpc:expose *server*
                    ,name
                    (lambda (,params)

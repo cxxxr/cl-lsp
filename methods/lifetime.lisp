@@ -70,7 +70,7 @@
    ;:workspace
    ))
 
-(define-method "initialize" (params protocol:initialize-params)
+(define-method "initialize" (params protocol:initialize-params) ()
   (set-client-capabilities params)
   (json:object-to-json
    (make-instance 'protocol:initialize-result
@@ -78,13 +78,13 @@
                   :server-info (json:make-json :name "cl-lsp"
                                                #|:version "0.0.1"|#))))
 
-(define-method "initialized" (params)
+(define-method "initialized" () ()
   (swank-init)
   (mapc #'funcall *initialized-hooks*)
   nil)
 
-(define-method "shutdown" (params)
+(define-method "shutdown" () ()
   t)
 
-(define-method "exit" (params)
+(define-method "exit" () ()
   (values))
