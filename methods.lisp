@@ -44,9 +44,6 @@
 (defmacro with-text-document-position ((point) params &body body)
   `(call-with-text-document-position ,params (lambda (,point) ,@body)))
 
-(define-method "workspace/didChangeConfiguration" () ()
-  nil)
-
 (define-method "workspace/symbol" (params |WorkspaceSymbolParams|) ()
   (let* ((query (slot-value params '|query|))
          (limit 42))

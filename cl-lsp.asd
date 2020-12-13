@@ -31,6 +31,7 @@
                (:module "lsp-methods"
                 :pathname "methods"
                 :serial t
-                :components ((:file "lifetime")))
+                :components ((:file "lifetime")
+                             (:file "workspace")))
                (:file "eval")
                (:file "main")))
