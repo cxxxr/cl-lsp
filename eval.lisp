@@ -8,6 +8,8 @@
         :cl-lsp/swank
         :cl-lsp/gray-streams
         :cl-lsp/server)
+  (:import-from :cl-lsp/methods/lifetime
+                :register-initialized-hook)
   (:import-from :lem-base
                 :with-point
                 :points-to-string)
@@ -43,7 +45,7 @@
                (loop :for event := (receive) :do
                  (funcall event))))))))
 
-(pushnew 'start-eval-thread *initialized-hooks*)
+(register-initialized-hook 'start-eval-thread)
 
 (defun send-eval (function)
   (jsonrpc:notify-async *server* "lisp/evalBegin" nil)

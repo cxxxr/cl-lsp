@@ -28,5 +28,9 @@
                (:file "formatting")
                (:file "server")
                (:file "methods")
+               (:module "lsp-methods"
+                :pathname "methods"
+                :serial t
+                :components ((:file "lifetime")))
                (:file "eval")
                (:file "main")))
