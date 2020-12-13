@@ -13,7 +13,8 @@
    :with-error-handle
    :define-method
    :notify-show-message
-   :notify-log-message))
+   :notify-log-message
+   :set-client-capabilities))
 (in-package :cl-lsp/server)
 
 (defvar *server* (jsonrpc:make-server))
@@ -99,6 +100,9 @@
                                         :|message| message))))
 
 (defvar *initialize-params* nil)
+
+(defun set-client-capabilities (initialize-params)
+  (setf *initialize-params* initialize-params))
 
 (defun error-response-if-already-initialized (method-name)
   (when (and (string/= method-name "initialize")

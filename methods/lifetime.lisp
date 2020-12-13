@@ -1,7 +1,8 @@
 (cl-lsp/defpackage:defpackage :cl-lsp/methods/lifetime
   (:use :cl)
   (:import-from :cl-lsp/server
-                :define-method)
+                :define-method
+                :set-client-capabilities)
   (:import-from :cl-lsp/swank
                 :swank-init)
   (:local-nicknames (:protocol :lem-lsp-utils/protocol)
@@ -70,7 +71,7 @@
    ))
 
 (define-method "initialize" (params protocol:initialize-params)
-  (setf cl-lsp/server::*initialize-params* params)
+  (set-client-capabilities params)
   (json:object-to-json
    (make-instance 'protocol:initialize-result
                   :capabilities (make-server-capabilities)
