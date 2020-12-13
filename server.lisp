@@ -61,15 +61,15 @@
 (defun call-with-request-wrapper (name function &key params params-type without-lock)
   (with-error-handle
     (request-log name params)
-    (check-initialized name)
-    (let* ((params (convert-params params params-type))
-           (response
-             (if without-lock
-                 (funcall function params)
-                 (bt:with-lock-held (*method-lock*)
-                   (funcall function params)))))
-      (response-log response)
-      response)))
+    (or (error-response-if-already-initialized name)
+        (let* ((params (convert-params params params-type))
+               (response
+                 (if without-lock
+                     (funcall function params)
+                     (bt:with-lock-held (*method-lock*)
+                       (funcall function params)))))
+          (response-log response)
+          response))))
 
 (defmacro with-request-wrapper ((name params &optional params-type without-lock) &body body)
   `(call-with-request-wrapper ,name
@@ -105,7 +105,7 @@
 
 (defvar *initialize-params* nil)
 
-(defun check-initialized (method-name)
+(defun error-response-if-already-initialized (method-name)
   (when (and (string/= method-name "initialize")
              (null *initialize-params*))
     (alexandria:plist-hash-table
