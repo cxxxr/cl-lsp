@@ -17,6 +17,7 @@
                "cl-package-locks"
                "trivial-package-local-nicknames")
   :serial t
+  :pathname "src/"
   :components ((:file "jsonrpc-patch")
                (:file "defpackage")
                (:file "config")
