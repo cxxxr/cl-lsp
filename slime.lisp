@@ -107,7 +107,8 @@
          (skip-chars-backward point #'syntax-symbol-char-p)
          (with-point ((end point))
            (unless (form-offset end 1)
-             (when (eq severity :read-error)
+             #+(or)
+             (when (eq severity :read-error) ;dead code
                (buffer-start point))
              (buffer-end end))
            (funcall function point end severity message)))))))
