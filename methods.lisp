@@ -1,4 +1,4 @@
-(cl-lsp/defpackage:defpackage :cl-lsp/server
+(cl-lsp/defpackage:defpackage :cl-lsp/methods
   (:use :cl
         :cl-lsp/protocol
         :cl-lsp/protocol-util
@@ -24,7 +24,7 @@
            :notify-show-message
            :notify-log-message)
   (:lock t))
-(in-package :cl-lsp/server)
+(in-package :cl-lsp/methods)
 
 (defvar *server* (jsonrpc:make-server))
 (defvar *method-lock* (bt:make-lock))

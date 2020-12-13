@@ -1,7 +1,7 @@
 (cl-lsp/defpackage:defpackage :cl-lsp/eval
   (:use :cl
         :cl-lsp/logger
-        :cl-lsp/server
+        :cl-lsp/methods
         :cl-lsp/protocol
         :cl-lsp/protocol-util
         :cl-lsp/slime

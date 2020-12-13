@@ -1,6 +1,6 @@
 (cl-lsp/defpackage:defpackage :cl-lsp/main
   (:use :cl
-        :cl-lsp/server
+        :cl-lsp/methods
         :cl-lsp/logger
         :cl-lsp/eval)
   (:export :run-tcp-mode
