@@ -20,6 +20,7 @@
   :pathname "src/"
   :components ((:file "jsonrpc-patch")
                (:file "defpackage")
+               (:file "editor")
                (:file "config")
                (:file "logger")
                (:file "gray-streams")
@@ -34,6 +35,7 @@
                 :pathname "methods"
                 :serial t
                 :components ((:file "lifetime")
-                             (:file "workspace")))
+                             (:file "workspace")
+                             #+(or)(:file "text-document")))
                (:file "eval")
                (:file "main")))
