@@ -37,5 +37,12 @@
                 :components ((:file "lifetime")
                              (:file "workspace")
                              #+(or)(:file "text-document")))
-               (:file "eval")
-               (:file "main")))
+               ;; (:file "eval")
+               (:file "main"))
+  :in-order-to ((test-op (test-op "cl-lsp/test"))))
+
+(defsystem "cl-lsp/test"
+  :depends-on ("cl-lsp" "rove")
+  :pathname "test/"
+  :components ((:file "main"))
+  :perform (test-op (o c) (symbol-call :rove '#:run c)))

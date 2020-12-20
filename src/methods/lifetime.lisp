@@ -50,8 +50,8 @@
    :document-highlight-provider (make-instance 'protocol:document-highlight-options
                                                :work-done-progress (json:json-false))
    :code-action-provider (json:json-false)
-   :code-lens-provider (json:json-false)
-   :document-link-provider (json:json-false)
+   ;; :code-lens-provider
+   ;; :document-link-provider
    :color-provider (json:json-false)
    :document-formatting-provider (make-instance 'protocol:document-formatting-options
                                                 :work-done-progress (json:json-false))
@@ -64,10 +64,9 @@
                                    :work-done-progress (json:json-false)
                                    :prepare-provider (json:json-false))
    :folding-range-provider (json:json-false)
-   :execute-command-provider (json:json-false)
+   ;; :execute-command-provider
    :selection-range-provider (json:json-false)
-   :workspace-symbol-provider (make-instance 'protocol:workspace-symbol-options
-                                             :work-done-progress (json:json-false))
+   :workspace-symbol-provider (json:json-false)
    ;:workspace
    ))
 
