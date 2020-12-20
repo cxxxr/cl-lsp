@@ -2,123 +2,182 @@
   (:use :cl)
   (:import-from :cl-lsp/logger
                 :log-format)
-  (:import-from :cl-lsp/protocol
-                :convert-from-hash-table
-                :convert-to-hash-table)
-  (:local-nicknames (:json-lsp-utils :lem-lsp-utils/json-lsp-utils))
-  (:lock t)
+  (:local-nicknames (:protocol :lem-lsp-utils/protocol)
+                    (:json :lem-lsp-utils/json)
+                    (:json-lsp-utils :lem-lsp-utils/json-lsp-utils))
   (:export
+   :call
+   :request-method-name
    :*server*
-   :*method-lock*
-   :with-error-handle
-   :define-method
-   :notify-show-message
-   :notify-log-message
-   :set-client-capabilities))
+   :abstract-server
+   :register-request
+   :server-listen
+   :set-client-capabilities
+   :tcp-server
+   :stdio-server
+   :define-method))
 (in-package :cl-lsp/server)
 
-(defvar *server* (jsonrpc:make-server))
-(defvar *method-lock* (bt:make-lock))
+(defgeneric call (request params))
+(defgeneric request-method-name (request))
 
-(defun request-log (name params)
-  (log-format "~%* from client~%")
-  (log-format "name: ~A~%" name)
-  (log-format "params: ~A~%"
-              (with-output-to-string (stream)
-                (yason:encode params stream))))
+;;; abstract server
+(defvar *server*)
 
-(defun response-log (hash)
-  (log-format "~%* to server~%~A~%"
-              (with-output-to-string (out)
-                (yason:encode hash out))))
+(defgeneric register-request (server request))
+(defgeneric server-listen (server))
 
-(defun call-with-error-handle (function)
-  (handler-bind ((error (lambda (c)
-                          (log-format "~A~%~%~A~%"
-                                      c
-                                      (with-output-to-string (stream)
-                                        (uiop:print-backtrace :stream stream
-                                                              :condition c))))))
-    (funcall function)))
+(defclass abstract-server ()
+  ((client-capabilities
+    :initform nil
+    :accessor server-client-capabilities)))
 
-(defmacro with-error-handle (&body body)
-  `(call-with-error-handle (lambda () ,@body)))
+(defun register-all-methods (server)
+  (dolist (class (closer-mop:class-direct-subclasses (find-class 'request)))
+    (register-request server (make-instance class))))
+
+(defmethod server-listen :before ((server abstract-server))
+  (register-all-methods server))
+
+(defmethod server-listen ((server abstract-server)))
+
+(defun set-client-capabilities (capabilities)
+  (setf (server-client-capabilities *server*) capabilities))
+
+;;; json-object-converter
+(defclass json-object-converter ()
+  ((params-type
+    :initarg :params-type
+    :reader request-params-type
+    :initform nil))
+  (:metaclass closer-mop:funcallable-standard-class))
+
+(defmethod initialize-instance :after ((request json-object-converter) &key)
+  (closer-mop:set-funcallable-instance-function
+   request
+   (lambda (params)
+     (call request params))))
 
 (defun convert-params (params params-type)
   (etypecase params-type
     (null params)
     (symbol
      (alexandria:switch ((symbol-package params-type))
-       ((load-time-value (find-package :cl-lsp/protocol))
-        (convert-from-hash-table params-type params))
+       ((load-time-value (find-package :cl-lsp/protocol)) ;fallback
+        (cl-lsp/protocol:convert-from-hash-table params-type params))
        ((load-time-value (find-package :lem-lsp-utils/protocol))
         (json-lsp-utils:coerce-json params params-type))))))
 
-(defun call-with-request-wrapper (name function
-                                  &key params
-                                       params-type
-                                       without-lock
-                                       without-initialized-check)
-  (with-error-handle
-    (request-log name params)
-    (let* ((params (convert-params params params-type))
-           (response
-             (or (if without-initialized-check
-                     nil
-                     (error-response-if-already-initialized))
-                 (if without-lock
-                     (funcall function params)
-                     (bt:with-lock-held (*method-lock*)
-                       (funcall function params))))))
-      (response-log response)
-      response)))
+(defun convert-response (response)
+  (if (typep response 'json:object)
+      (json:object-to-json response)
+      response))
 
-(defmacro with-request-wrapper ((name params &optional params-type without-lock without-initialized-check)
-                                &body body)
-  `(call-with-request-wrapper ,name
-                              (lambda (,params) (declare (ignorable ,params)) ,@body)
-                              :params ,params
-                              :params-type ',params-type
-                              :without-lock ,without-lock
-                              :without-initialized-check ,without-initialized-check))
+(defmethod call :around ((request json-object-converter) params)
+  (let* ((params (convert-params params (request-params-type request)))
+         (response (call-next-method request params)))
+    (convert-response response)))
 
-(defmacro define-method (name
-                         (&optional (params (gensym "PARAMS")) params-type)
-                         (&key without-lock without-initialized-check)
-                         &body body)
-  `(jsonrpc:expose
-    *server*
-    ,name
-    (lambda (,params)
-      (with-request-wrapper (,name ,params ,params-type ,without-lock ,without-initialized-check)
-        ,@body))))
+;;; request-logger
+(defclass request-logger () ())
 
-(defun notify-show-message (type message)
-  (log-format "window/showMessage: ~A ~A~%" type message)
-  (jsonrpc:notify-async *server*
-                        "window/showMessage"
-                        (convert-to-hash-table
-                         (make-instance '|ShowMessageParams|
-                                        :|type| type
-                                        :|message| message))))
+(defun pprint-json-to-string (object)
+  (with-output-to-string (stream)
+    (yason:encode object (yason:make-json-output-stream stream))))
 
-(defun notify-log-message (type message)
-  (log-format "window/logMessage: ~A ~A~%" type message)
-  (jsonrpc:notify-async *server*
-                        "window/logMessage"
-                        (convert-to-hash-table
-                         (make-instance '|LogMessageParams|
-                                        :|type| type
-                                        :|message| message))))
+(defun request-log (name params)
+  (log-format "~%* from client~%")
+  (log-format "name: ~A~%" name)
+  (log-format "params: ~A~%"
+              (pprint-json-to-string params)))
 
-(defvar *initialize-params* nil)
+(defun response-log (response)
+  (log-format "~%* to server~%~A~%"
+              (pprint-json-to-string response)))
 
-(defun set-client-capabilities (initialize-params)
-  (setf *initialize-params* initialize-params))
+(defmethod call :around ((request request-logger) params)
+  (request-log (request-method-name request) params)
+  (let ((response (call-next-method)))
+    (response-log response)
+    response))
 
-(defun error-response-if-already-initialized ()
-  (unless *initialize-params*
-    (alexandria:plist-hash-table
-     (list "code" -32002
-           "message" "did not initialize")
-     :test 'equal)))
+;;; request-error-handler
+(defclass request-error-handler () ())
+
+(defmethod call :around ((request request-error-handler) params)
+  (handler-bind ((error (lambda (c)
+                          (log-format "~A~2%~A~%"
+                                      c
+                                      (with-output-to-string (stream)
+                                        (uiop:print-backtrace :stream stream
+                                                              :condition c))))))
+    (call-next-method)))
+
+;;; lifetime
+(defclass lifetime ()
+  ())
+
+(defmethod call :around ((request lifetime) params)
+  (if (or (server-client-capabilities *server*)
+          (string= "initialize" (request-method-name request)))
+      (call-next-method)
+      (alexandria:plist-hash-table
+       (list "code" -32002
+             "message" "did not initialize")
+       :test 'equal)))
+
+;;; request
+(defclass request (request-logger
+                   request-error-handler
+                   json-object-converter
+                   lifetime)
+  ((method-name
+    :initarg :method-name
+    :reader request-method-name
+    :initform (alexandria:required-argument :method-name))))
+
+;;; server
+(defclass server (abstract-server)
+  ((connection :initform (jsonrpc:make-server)
+               :reader server-connection)
+   (lock :initform (bt:make-lock)
+         :reader server-lock)))
+
+(defmethod register-request ((server server) request)
+  (jsonrpc:expose (server-connection server)
+                  (request-method-name request)
+                  (lambda (params)
+                    (let ((*server* server))
+                      (bt:with-lock-held ((server-lock server))
+                        (funcall request params))))))
+
+;;; tcp-server
+(defclass tcp-server (server)
+  ((port :initarg :port
+         :reader tcp-server-port)))
+
+(defmethod server-listen ((server tcp-server))
+  (jsonrpc:server-listen (server-connection server)
+                         :mode :tcp
+                         :port (tcp-server-port server)))
+
+;;; stdio-server
+(defclass stdio-server (server)
+  ())
+
+(defmethod server-listen ((server stdio-server))
+  (jsonrpc:server-listen (server-connection server) :mode :stdio))
+
+;;;
+(defmacro define-method (name (&optional (params (gensym "PARAMS")) params-type) () &body body)
+  (alexandria:with-unique-names (g-request)
+    (let ((class-name (intern name)))
+      `(progn
+         (defclass ,class-name (request)
+           ()
+           (:metaclass closer-mop:funcallable-standard-class)
+           (:default-initargs
+            :method-name ,name
+            :params-type ',params-type))
+         (defmethod call ((,g-request ,class-name) ,params)
+           ,@body)))))

@@ -3,7 +3,13 @@
         :alexandria
         :cl-lsp/methods
         :cl-lsp/logger
-        :cl-lsp/eval)
+        ;; :cl-lsp/eval
+        )
+  (:import-from :cl-lsp/server
+                :*server*
+                :tcp-server
+                :stdio-server
+                :server-listen)
   (:import-from :cl-lsp/config
                 :with-environment
                 :config)
@@ -21,11 +27,13 @@
     (start-swank-if-enabled)
     (with-log-stream (*error-output*)
       (log-format "server-listen~%mode:tcp~%port:~D~%" port)
-      (jsonrpc:server-listen cl-lsp/server:*server* :port port :mode :tcp))))
+      (let ((*server* (make-instance 'tcp-server :port port)))
+        (server-listen *server*)))))
 
 (defun run-stdio-mode ()
   (with-environment :stdio
     (start-swank-if-enabled)
     (with-log-file ((config :log-pathname))
       (log-format "server-listen~%mode:stdio~%")
-      (jsonrpc:server-listen cl-lsp/server:*server* :mode :stdio))))
+      (let ((*server* (make-instance 'stdio-server)))
+        (server-listen *server*)))))

@@ -6,8 +6,10 @@
         :cl-lsp/slime
         :cl-lsp/swank
         :cl-lsp/formatting
-        :cl-lsp/server
+        ;; :cl-lsp/server
         :lem-base)
+  (:import-from :cl-lsp/server
+                :define-method)
   (:import-from :lem-lisp-syntax
                 :*syntax-table*
                 :search-local-definition)
@@ -17,9 +19,7 @@
   (:export :*initialized-hooks*
            :get-buffer-from-uri
            :with-document-position
-           :with-text-document-position
-           :notify-show-message
-           :notify-log-message)
+           :with-text-document-position)
   (:lock t))
 (in-package :cl-lsp/methods)
 
