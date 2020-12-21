@@ -1,11 +1,12 @@
-(cl-lsp/defpackage:defpackage :cl-lsp/test/main
+(cl-lsp/defpackage:defpackage :cl-lsp/test/initialize
   (:use :cl
         :rove
-        :cl-lsp/server)
+        :cl-lsp/server
+        :cl-lsp/test/test-server)
   (:local-nicknames (:protocol :lem-lsp-utils/protocol)
                     (:json :lem-lsp-utils/json)
                     (:json-lsp-utils :lem-lsp-utils/json-lsp-utils)))
-(in-package :cl-lsp/test/main)
+(in-package :cl-lsp/test/initialize)
 
 (defparameter *client-capabilities* "{
   \"workspace\":{
@@ -152,23 +153,7 @@
   }
 }")
 
-(defclass test-server (abstract-server)
-  ((method-table
-    :initform (make-hash-table :test 'equal)
-    :reader server-method-table)))
-
-(defmethod register-request ((server test-server) request)
-  (setf (gethash (request-method-name request) (server-method-table server))
-        request))
-
-(defun call-lsp-method (server name params)
-  (let ((request (gethash name (server-method-table server))))
-    (unless request
-      (error "~A is not defined" name))
-    (let ((*server* server))
-      (funcall request params))))
-
-(deftest initialize-result
+(deftest initialize
   (let ((server (make-instance 'test-server)))
     (server-listen server)
     (let* ((response

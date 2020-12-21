@@ -44,5 +44,7 @@
 (defsystem "cl-lsp/test"
   :depends-on ("cl-lsp" "rove")
   :pathname "test/"
-  :components ((:file "main"))
+  :components ((:file "test-server")
+               (:file "initialize")
+               (:file "initialized"))
   :perform (test-op (o c) (symbol-call :rove '#:run c)))
