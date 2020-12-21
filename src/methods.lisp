@@ -14,8 +14,7 @@
                 :*syntax-table*
                 :search-local-definition)
   (:local-nicknames (:protocol :lem-lsp-utils/protocol)
-                    (:json :lem-lsp-utils/json)
-                    (:json-lsp-utils :lem-lsp-utils/json-lsp-utils))
+                    (:json :lem-lsp-utils/json))
   (:export :*initialized-hooks*
            :get-buffer-from-uri
            :with-document-position

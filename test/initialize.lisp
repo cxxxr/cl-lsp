@@ -4,8 +4,7 @@
         :cl-lsp/server
         :cl-lsp/test/test-server)
   (:local-nicknames (:protocol :lem-lsp-utils/protocol)
-                    (:json :lem-lsp-utils/json)
-                    (:json-lsp-utils :lem-lsp-utils/json-lsp-utils))
+                    (:json :lem-lsp-utils/json))
   (:export :initialize-request))
 (in-package :cl-lsp/test/initialize)
 
@@ -163,7 +162,7 @@
                      :process-id 1234
                      :client-info (json:make-json :name "lem")
                      :root-uri "file:///Users/user/"
-                     :capabilities (json-lsp-utils:coerce-json
+                     :capabilities (json:coerce-json
                                     (yason:parse *client-capabilities*)
                                     'protocol:client-capabilities)
                      :trace "off"
@@ -173,7 +172,7 @@
   (let ((server (make-instance 'test-server)))
     (server-listen server)
     (let* ((response (initialize-request server))
-           (result (json-lsp-utils:coerce-json response 'protocol:initialize-result)))
+           (result (json:coerce-json response 'protocol:initialize-result)))
       (ok (string= *expected-initialize-result*
                    (with-output-to-string (out)
                      (yason:encode (json:object-to-json result)

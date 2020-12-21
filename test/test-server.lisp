@@ -2,8 +2,7 @@
   (:use :cl
         :cl-lsp/server)
   (:local-nicknames (:protocol :lem-lsp-utils/protocol)
-                    (:json :lem-lsp-utils/json)
-                    (:json-lsp-utils :lem-lsp-utils/json-lsp-utils))
+                    (:json :lem-lsp-utils/json))
   (:export :test-server
            :call-lsp-method))
 (in-package :cl-lsp/test/test-server)

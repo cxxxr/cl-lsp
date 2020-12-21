@@ -3,8 +3,7 @@
   (:import-from :cl-lsp/logger
                 :log-format)
   (:local-nicknames (:protocol :lem-lsp-utils/protocol)
-                    (:json :lem-lsp-utils/json)
-                    (:json-lsp-utils :lem-lsp-utils/json-lsp-utils))
+                    (:json :lem-lsp-utils/json))
   (:export
    :call
    :request-method-name
@@ -66,7 +65,7 @@
        ((load-time-value (find-package :cl-lsp/protocol)) ;fallback
         (cl-lsp/protocol:convert-from-hash-table params-type params))
        ((load-time-value (find-package :lem-lsp-utils/protocol))
-        (json-lsp-utils:coerce-json params params-type))))))
+        (json:coerce-json params params-type))))))
 
 (defun convert-response (response)
   (if (typep response 'json:object)
