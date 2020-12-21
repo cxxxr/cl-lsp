@@ -7,7 +7,7 @@
                     (:json :lem-lsp-utils/json)))
 (in-package :cl-lsp/test/initialized)
 
-(deftest initialized
+(deftest did-not-initialized
   (let ((server (make-instance 'test-server)))
     (server-listen server)
     (let ((response
@@ -16,3 +16,13 @@
                              nil)))
       (ok (equal -32002 (json:json-get response "code")))
       (ok (equal "did not initialize" (json:json-get response "message"))))))
+
+(deftest success
+  (let ((server (make-instance 'test-server)))
+    (server-listen server)
+    (cl-lsp/test/initialize:initialize-request server)
+    (let ((response
+            (call-lsp-method server
+                             "initialized"
+                             nil)))
+      (ok (null response)))))
