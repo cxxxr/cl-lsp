@@ -19,8 +19,7 @@
   (:export :*initialized-hooks*
            :get-buffer-from-uri
            :with-document-position
-           :with-text-document-position)
-  (:lock t))
+           :with-text-document-position))
 (in-package :cl-lsp/methods)
 
 (defun get-buffer-from-uri (uri)

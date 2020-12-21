@@ -9,8 +9,7 @@
            :move-to-lsp-position
            :make-lsp-range
            :file-location
-           :buffer-location)
-  (:lock t))
+           :buffer-location))
 (in-package :cl-lsp/protocol-util)
 
 (defun list-to-object-or-object[] (list)

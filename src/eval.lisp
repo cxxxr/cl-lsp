@@ -12,8 +12,7 @@
                 :register-initialized-hook)
   (:import-from :lem-base
                 :with-point
-                :points-to-string)
-  (:lock t))
+                :points-to-string))
 (in-package :cl-lsp/eval)
 
 (defvar *eval-thread* nil)

@@ -28,7 +28,7 @@
 
   (defun expand-non-ansi-options (package-name options)
     (let ((forms
-            (loop :for option  :in options
+            (loop :for option :in options
                   :for form
                      := (ecase (first option)
                           (:lock
@@ -48,6 +48,8 @@
       `(eval-when (:compile-toplevel :load-toplevel :execute) ,@forms))))
 
 (defun translate-defpackage (package-name options)
+  (unless (find :lock options :key #'first)
+    (setf options (append options (list '(:lock t)))))
   (let* ((ansi-options (filter-ansi-options options))
          (non-ansi-options (filter-non-ansi-options options))
          (extra-form (expand-non-ansi-options package-name non-ansi-options)))

@@ -14,8 +14,7 @@
                 :with-environment
                 :config)
   (:export :run-tcp-mode
-           :run-stdio-mode)
-  (:lock t))
+           :run-stdio-mode))
 (in-package :cl-lsp/main)
 
 (defun start-swank-if-enabled ()

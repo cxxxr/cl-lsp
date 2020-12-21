@@ -6,8 +6,7 @@
            :*logger-stream*
            :log-format
            :with-log-file
-           :with-log-stream)
-  (:lock t))
+           :with-log-stream))
 (in-package :cl-lsp/logger)
 
 (defvar *logger-stream*)
