@@ -30,7 +30,8 @@
 (defclass abstract-server ()
   ((client-capabilities
     :initform nil
-    :accessor server-client-capabilities)))
+    :reader server-client-capabilities
+    :writer set-client-capabilities)))
 
 (defun register-all-methods (server)
   (dolist (class (closer-mop:class-direct-subclasses (find-class 'request)))
@@ -45,9 +46,6 @@
 
 (defmacro with-server ((server) &body body)
   `(let ((*server* ,server)) ,@body))
-
-(defun set-client-capabilities (capabilities)
-  (setf (server-client-capabilities (this-server)) capabilities))
 
 ;;; json-object-converter
 (defclass json-object-converter ()

@@ -2,6 +2,7 @@
   (:use :cl)
   (:import-from :cl-lsp/server
                 :define-method
+                :this-server
                 :set-client-capabilities)
   (:import-from :cl-lsp/swank
                 :swank-init)
@@ -71,7 +72,7 @@
    ))
 
 (define-method "initialize" (params protocol:initialize-params) ()
-  (set-client-capabilities params)
+  (set-client-capabilities params (this-server))
   (json:object-to-json
    (make-instance 'protocol:initialize-result
                   :capabilities (make-server-capabilities)
