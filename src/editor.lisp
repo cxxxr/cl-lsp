@@ -30,7 +30,7 @@
           (lem-base:make-buffer uri
                                 :temporary t
                                 :syntax-table lem-lisp-syntax:*syntax-table*)))
-    (lem-base:insert-string buffer text)
+    (lem-base:insert-string (lem-base:buffer-point buffer) text)
     buffer))
 
 (defmethod close-file-contents-using-editor ((editor lem) file-contents)
