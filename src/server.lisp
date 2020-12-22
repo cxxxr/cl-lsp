@@ -8,6 +8,8 @@
    :call
    :request-method-name
    :abstract-server
+   :server-text-document-controller
+   :set-server-text-document-controller
    :register-request
    :server-listen
    :this-server
@@ -31,7 +33,12 @@
   ((client-capabilities
     :initform nil
     :reader server-client-capabilities
-    :writer set-client-capabilities)))
+    :writer set-client-capabilities)
+   (text-document-controller
+    :initform nil
+    :initarg :text-document-controller
+    :reader server-text-document-controller
+    :writer set-server-text-document-controller)))
 
 (defun register-all-methods (server)
   (dolist (class (closer-mop:class-direct-subclasses (find-class 'request)))

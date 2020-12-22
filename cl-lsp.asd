@@ -30,6 +30,7 @@
                (:file "protocol-util")
                (:file "formatting")
                (:file "server")
+               (:file "text-document-controller")
                (:file "methods")
                (:module "lsp-methods"
                 :pathname "methods"
@@ -46,5 +47,6 @@
   :pathname "test/"
   :components ((:file "test-server")
                (:file "initialize")
-               (:file "initialized"))
+               (:file "initialized")
+               (:file "text-document-did-open"))
   :perform (test-op (o c) (symbol-call :rove '#:run c)))
