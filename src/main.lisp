@@ -6,7 +6,6 @@
         ;; :cl-lsp/eval
         )
   (:import-from :cl-lsp/server
-                :*server*
                 :tcp-server
                 :stdio-server
                 :server-listen)
@@ -26,13 +25,11 @@
     (start-swank-if-enabled)
     (with-log-stream (*error-output*)
       (log-format "server-listen~%mode:tcp~%port:~D~%" port)
-      (let ((*server* (make-instance 'tcp-server :port port)))
-        (server-listen *server*)))))
+      (server-listen (make-instance 'tcp-server :port port)))))
 
 (defun run-stdio-mode ()
   (with-environment :stdio
     (start-swank-if-enabled)
     (with-log-file ((config :log-pathname))
       (log-format "server-listen~%mode:stdio~%")
-      (let ((*server* (make-instance 'stdio-server)))
-        (server-listen *server*)))))
+      (server-listen (make-instance 'stdio-server)))))

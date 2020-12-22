@@ -20,5 +20,5 @@
   (let ((request (gethash name (server-method-table server))))
     (unless request
       (error "~A is not defined" name))
-    (let ((*server* server))
+    (with-server (server)
       (funcall request params))))

@@ -7,10 +7,11 @@
   (:export
    :call
    :request-method-name
-   :*server*
    :abstract-server
    :register-request
    :server-listen
+   :this-server
+   :with-server
    :set-client-capabilities
    :tcp-server
    :stdio-server
@@ -40,8 +41,13 @@
 
 (defmethod server-listen ((server abstract-server)))
 
+(defun this-server () *server*)
+
+(defmacro with-server ((server) &body body)
+  `(let ((*server* ,server)) ,@body))
+
 (defun set-client-capabilities (capabilities)
-  (setf (server-client-capabilities *server*) capabilities))
+  (setf (server-client-capabilities (this-server)) capabilities))
 
 ;;; json-object-converter
 (defclass json-object-converter ()
@@ -117,7 +123,7 @@
   ())
 
 (defmethod call :around ((request lifetime) params)
-  (if (or (server-client-capabilities *server*)
+  (if (or (server-client-capabilities (this-server))
           (string= "initialize" (request-method-name request)))
       (call-next-method)
       (alexandria:plist-hash-table
@@ -146,7 +152,7 @@
   (jsonrpc:expose (server-connection server)
                   (request-method-name request)
                   (lambda (params)
-                    (let ((*server* server))
+                    (with-server (server)
                       (bt:with-lock-held ((server-lock server))
                         (funcall request params))))))
 
