@@ -10,7 +10,8 @@
            :find-text-document
            :open-text-document
            :close-text-document
-           :apply-content-change))
+           :apply-content-change
+           :fetch-text-document))
 (in-package :cl-lsp/text-document-controller)
 
 (defstruct text-document
@@ -62,3 +63,14 @@
            (editor:edit-file-contents (text-document-file-contents text-document)
                                       (convert-range range)
                                       text)))))
+
+(defmethod fetch-text-document ((this text-document-controller) (params protocol:text-document-position-params))
+  (let* ((position (protocol:text-document-position-params-position
+                    params))
+         (uri (protocol:text-document-identifier-uri
+               (protocol:text-document-position-params-text-document
+                params)))
+         (text-document (find-text-document this uri)))
+    (editor:move-to-position (text-document-file-contents text-document)
+                             (convert-position position))
+    text-document))

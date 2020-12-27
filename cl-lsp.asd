@@ -37,7 +37,8 @@
                 :serial t
                 :components ((:file "lifetime")
                              (:file "workspace")
-                             #+(or)(:file "text-document")))
+                             (:file "text-document")
+                             (:file "language-features")))
                ;; (:file "eval")
                (:file "main"))
   :in-order-to ((test-op (test-op "cl-lsp/test"))))

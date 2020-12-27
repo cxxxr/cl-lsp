@@ -53,6 +53,7 @@
                      :for name :in (swank-apropos-list query package)
                      :append (symbol-informations name package nil)))))))
 
+#+(or)
 (define-method "textDocument/didOpen" (params |DidOpenTextDocumentParams|) ()
   (let ((text-document
          (slot-value params
@@ -69,6 +70,7 @@
                     :version |version|)))))
   (values))
 
+#+(or)
 (define-method "textDocument/didChange" (params |DidChangeTextDocumentParams|) ()
   (let ((text-document (slot-value params '|textDocument|))
         (content-changes (slot-value params '|contentChanges|)))
@@ -86,12 +88,15 @@
                    (delete-character point |rangeLength|)
                    (insert-string point |text|)))))))))
 
+#+(or)
 (define-method "textDocument/willSave" () ()
   )
 
+#+(or)
 (define-method "textDocument/willSaveWaitUntil" () ()
   )
 
+#+(or)
 (define-method "textDocument/didSave" (params |DidSaveTextDocumentParams|) ()
   (let* ((text
           (slot-value params '|text|))
@@ -106,6 +111,7 @@
       (insert-string (buffer-point buffer) text)))
   (values))
 
+#+(or)
 (define-method "textDocument/didClose" (params |DidCloseTextDocumentParams|) ()
   (let* ((text-document
           (slot-value params '|textDocument|))
@@ -153,6 +159,7 @@
                                        ;:|data|
                                        ))))))))))
 
+#+(or)
 (define-method "textDocument/hover" (params |TextDocumentPositionParams|) ()
   (with-text-document-position (point) params
     (let* ((symbol-string (symbol-string-at-point* point))
@@ -252,6 +259,7 @@
                  (read-from-string string))))))
     name))
 
+#+(or)
 (define-method "textDocument/documentHighlight" (params |TextDocumentPositionParams|) ()
   (with-text-document-position (point) params
     (list-to-object[]
