@@ -38,11 +38,12 @@
         (uiop:read-file-form *config-pathname*))))
 
 (defun config-plist ()
-  (if (alive-cache-p)
-      (get-cached-value)
-      (let ((plist (config-plist-without-cache)))
-        (update-cache plist (file-write-date *config-pathname*))
-        plist)))
+  (when (uiop:file-exists-p *config-pathname*)
+    (if (alive-cache-p)
+        (get-cached-value)
+        (let ((plist (config-plist-without-cache)))
+          (update-cache plist (file-write-date *config-pathname*))
+          plist))))
 
 (defun config (&rest keys)
   (let ((plist (config-plist)))
