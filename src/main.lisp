@@ -21,6 +21,9 @@
     (swank:create-server :dont-close t :port port)))
 
 (defun run-tcp-mode (&key (port 10003))
+  (unless (find-package :jsonrpc/transport/tcp)
+    ;; XXX: https://github.com/cxxxr/jsonrpc/issues/27
+    (ql:quickload :jsonrpc/transport/tcp :silent t))
   (with-environment :tcp
     (start-swank-if-enabled)
     (with-log-stream (*error-output*)
