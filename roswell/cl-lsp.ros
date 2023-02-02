@@ -13,16 +13,6 @@ exec ros -Q -- $0 "$@"
 (in-package :ros.script.server.3694408704)
 
 (defun main (&rest argv)
-  (let ((mode (or (first argv) "tcp")))
-    (cond ((equal mode "tcp")
-           (let ((port (second argv)))
-             (if port
-                 (cl-lsp/main:run-tcp-mode :port (parse-integer port))
-                 (cl-lsp/main:run-tcp-mode))))
-          ((equal mode "stdio")
-           (cl-lsp/main:run-stdio-mode))
-          (t
-           (uiop:println (format nil "unknown mode: ~A" mode))
-           (uiop:quit 1)))))
+  (cl-lsp/main:main argv))
 
 ;;; vim: set ft=lisp lisp:

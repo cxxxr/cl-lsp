@@ -1,12 +1,9 @@
 (defpackage :cl-lsp/main
   (:use :cl)
-  (:import-from :lem-lsp-server/main
-                :run-tcp-mode
-                :run-stdio-mode)
-  (:export :run-tcp-mode
-           :run-stdio-mode
-           :main))
-
+  (:import-from :lem-language-server
+                :start-tcp-server
+                :start-stdio-server)
+  (:export :main))
 (in-package :cl-lsp/main)
 
 (defun main (&optional (args (uiop:command-line-arguments)))
@@ -14,11 +11,11 @@
     (cond ((equal mode "tcp")
            (let ((port (second args)))
              (if port
-                 (run-tcp-mode :port (parse-integer port))
-                 (run-tcp-mode))))
+                 (start-tcp-server (parse-integer port))
+                 (start-tcp-server 10003))))
           ((equal mode "stdio")
-           (run-stdio-mode))
+           (log:config :off)
+           (start-stdio-server))
           (t
            (uiop:println (format nil "unknown mode: ~A" mode))
            (uiop:quit 1)))))
-
