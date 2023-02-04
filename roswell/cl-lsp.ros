@@ -13,6 +13,6 @@ exec ros -Q -- $0 "$@"
 (in-package :ros.script.server.3694408704)
 
 (defun main (&rest argv)
-  (cl-lsp/main:main argv))
+  (cl-lsp:main argv))
 
 ;;; vim: set ft=lisp lisp:

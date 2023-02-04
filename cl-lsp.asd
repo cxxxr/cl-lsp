@@ -1,6 +1,5 @@
 (defsystem "cl-lsp"
-  :depends-on ("lem-language-server")
-  :pathname "src/"
+  :depends-on ("lem-language-server/cli")
   :components ((:file "main"))
   :in-order-to ((test-op (test-op "cl-lsp/test"))))
 
