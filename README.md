@@ -25,18 +25,11 @@ CL-LSP is still in early development, so you may run into rough edges with any o
 
 | Feature | Status | Notes |
 |---------|:------:|-------|
-| Common Lisp | ✅ | |
-| Code completion | ✅ | |
-| Quick Help (Hover) | ❓| |
-| Diagnostics | ❓ | |
-| Fix-its | ❓ | |
-| Jump to Definition | ❓ | |
-| Find References | ❓ | |
-| Background Indexing | ❓ | |
-| Workspace Symbols | ❓ | |
-| Global Rename | ❌ | |
-| Local Refactoring | ✅ | |
-| Formatting | ❌ | |
-| Folding | ❓ | |
-| Syntax Highlighting | ❌ | Not currently part of LSP. |
-| Document Symbols | ❓ |  |
+| Go to definition | ✅ |
+| Find references | ✅ |
+| Document highlight | ✅ |
+| Hover | ✅ |
+| Completion | ✅ |
+| Signature Help | ✅ |
+| Formatting | ✅ |
+| Range Formatting | ✅ |
