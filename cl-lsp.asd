@@ -6,7 +6,7 @@
 (defsystem "cl-lsp/executable"
   :build-operation program-op
   :build-pathname "cl-lsp"
-  :entry-point "cl-lsp/main:main"
+  :entry-point "cl-lsp:main"
   :depends-on ("cl-lsp"))
 
 #+sb-core-compression
